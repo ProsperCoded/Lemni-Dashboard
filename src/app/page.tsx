@@ -37,7 +37,7 @@ export default function Home() {
           </Link>
           
           <Link
-            href="/dashboard"
+            href="/login"
             className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-bold text-white bg-[#12B76A] hover:bg-[#0e9f5d] rounded-lg transition-colors shadow-sm cursor-pointer"
           >
             Dashboard
@@ -57,7 +57,7 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <Link
-              href="/dashboard"
+              href="/login"
               className="flex items-center justify-center px-6 py-3.5 text-sm font-bold text-white bg-[#12B76A] hover:bg-[#0e9f5d] rounded-lg transition-all shadow-md shadow-[#12B76A]/10 cursor-pointer w-fit"
             >
               Enter Merchant Dashboard

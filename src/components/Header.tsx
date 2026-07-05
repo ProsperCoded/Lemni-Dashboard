@@ -4,27 +4,54 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, CheckCircle2, AlertTriangle, Info, User } from 'lucide-react';
+import { notificationLogApi, NotificationLogRow } from '@/lib/api-client';
 
-interface AlertNotification {
-  id: string;
-  type: 'success' | 'warning' | 'info';
-  message: string;
-  time: string;
-  read: boolean;
+function timeAgo(dateString: string | null): string {
+  if (!dateString) return '';
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
-const mockAlerts: AlertNotification[] = [
-  { id: '1', type: 'warning', message: 'Payment failed for user_7294 (Standard Plan). Retry scheduled in 4 hours.', time: '10m ago', read: false },
-  { id: '2', type: 'success', message: 'Nomba API connection bridge restored.', time: '1h ago', read: false },
-  { id: '3', type: 'info', message: 'Plan "Max Membership" updated: price adjusted.', time: '3h ago', read: true },
-  { id: '4', type: 'success', message: 'Subscription success for user_9931 (Basic Plan).', time: '5h ago', read: true },
-];
+function getMerchantName(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('lemni_merchant');
+    if (!raw) return null;
+    const merchant = JSON.parse(raw) as { name?: string };
+    return merchant.name ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default function Header() {
   const pathname = usePathname();
-  const [alerts, setAlerts] = useState<AlertNotification[]>(mockAlerts);
+  const [alerts, setAlerts] = useState<NotificationLogRow[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const merchantName = getMerchantName();
+
+  const loadNotifications = async () => {
+    try {
+      const result = await notificationLogApi.list({ limit: '5' });
+      setAlerts(result.data);
+      setUnreadCount(result.unreadCount);
+    } catch {
+      // Header notifications are supplementary — fail silently, full list is on /dashboard/notifications
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadNotifications();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -37,10 +64,14 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const unreadCount = alerts.filter(a => !a.read).length;
-
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setAlerts(alerts.map(a => ({ ...a, read: true })));
+    setUnreadCount(0);
+    try {
+      await notificationLogApi.markRead({ all: true });
+    } catch {
+      // best-effort; next load will reconcile actual state
+    }
   };
 
   // Convert pathname to title
@@ -62,7 +93,7 @@ export default function Header() {
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
-        
+
         {/* Notifications Dropdown Bell */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -114,9 +145,9 @@ export default function Header() {
                     >
                       {/* Icon type */}
                       <div className="mt-0.5">
-                        {alert.type === 'success' && <CheckCircle2 className="w-4 h-4 text-success" />}
-                        {alert.type === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-                        {alert.type === 'info' && <Info className="w-4 h-4 text-blue-500" />}
+                        {alert.severity === 'success' && <CheckCircle2 className="w-4 h-4 text-success" />}
+                        {alert.severity === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                        {alert.severity === 'info' && <Info className="w-4 h-4 text-blue-500" />}
                       </div>
 
                       <div className="flex-1">
@@ -124,7 +155,7 @@ export default function Header() {
                           {alert.message}
                         </p>
                         <span className="text-[10px] text-muted mt-1.5 block">
-                          {alert.time}
+                          {timeAgo(alert.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -150,6 +181,11 @@ export default function Header() {
           <div className="w-8 h-8 rounded-full border border-card-border bg-muted-bg flex items-center justify-center text-muted">
             <User className="w-4 h-4" />
           </div>
+          {merchantName && (
+            <span className="text-xs font-semibold text-foreground hidden sm:inline">
+              {merchantName}
+            </span>
+          )}
         </div>
 
       </div>

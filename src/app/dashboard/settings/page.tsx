@@ -199,7 +199,10 @@ export default function SettingsPage() {
           ) : (
             <div className="space-y-3">
               {apiKeys.map((key) => (
-                <div key={key.id} className="flex items-center justify-between p-3 border border-card-border rounded-lg">
+                <div
+                  key={key.id}
+                  className={`flex items-center justify-between p-3 border border-card-border rounded-lg ${!key.isActive ? 'opacity-50' : ''}`}
+                >
                   <div className="flex items-center gap-3">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                       key.environment === 'live'
@@ -208,19 +211,26 @@ export default function SettingsPage() {
                     }`}>
                       {key.environment}
                     </span>
+                    {!key.isActive && (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-500/10 border-rose-500/20 text-rose-500">
+                        revoked
+                      </span>
+                    )}
                     <span className="text-xs text-muted font-mono">{key.id}</span>
                     <span className="text-[10px] text-muted">
                       {key.createdAt ? new Date(key.createdAt).toLocaleDateString() : ''}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRevokeKey(key.id)}
-                    className="px-2 py-1 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Revoke
-                  </button>
+                  {key.isActive && (
+                    <button
+                      type="button"
+                      onClick={() => handleRevokeKey(key.id)}
+                      className="px-2 py-1 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Revoke
+                    </button>
+                  )}
                 </div>
               ))}
 

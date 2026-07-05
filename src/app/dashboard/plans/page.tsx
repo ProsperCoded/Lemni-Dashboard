@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Eye } from 'lucide-react';
+import { Plus, Trash2, Eye, Link2, Check } from 'lucide-react';
 import { billingApi, ApiError, PlanRow } from '@/lib/api-client';
 
 export default function PlansPage() {
@@ -9,6 +9,8 @@ export default function PlansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [copiedPlanId, setCopiedPlanId] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   // Form states
   const [name, setName] = useState('');
@@ -98,6 +100,19 @@ export default function PlansPage() {
         const message = err instanceof ApiError ? err.message : 'Failed to delete plan';
         setDeleteError(message);
       }
+    }
+  };
+
+  const handleCopyLink = async (planId: string) => {
+    setLinkError(null);
+    try {
+      const { checkoutUrl } = await billingApi.getCheckoutLink(planId);
+      await navigator.clipboard.writeText(checkoutUrl);
+      setCopiedPlanId(planId);
+      setTimeout(() => setCopiedPlanId(null), 1500);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to get checkout link';
+      setLinkError(message);
     }
   };
 
@@ -292,6 +307,12 @@ export default function PlansPage() {
             </div>
           )}
 
+          {linkError && (
+            <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+              <p className="text-xs font-semibold text-rose-500">{linkError}</p>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex justify-center py-8">
               <span className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
@@ -309,6 +330,17 @@ export default function PlansPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleCopyLink(plan.id)}
+                      className="p-2 text-muted hover:text-foreground hover:bg-muted-bg rounded-lg transition-colors"
+                      title="Copy checkout link"
+                    >
+                      {copiedPlanId === plan.id ? (
+                        <Check className="w-4 h-4 text-success" />
+                      ) : (
+                        <Link2 className="w-4 h-4" />
+                      )}
+                    </button>
                     <button
                       onClick={() => window.open(`/preview/${plan.id}`, '_blank')}
                       className="p-2 text-muted hover:text-foreground hover:bg-muted-bg rounded-lg transition-colors"

@@ -124,9 +124,9 @@ export default function LoginPage() {
           {/* Setup callout */}
           <div className="mt-8 text-center text-xs text-muted border-t border-card-border pt-6">
             New to Lemni?{" "}
-            <a href="#" className="font-semibold text-accent hover:underline">
-              Sign In
-            </a>
+            <Link href="/signup" className="font-semibold text-accent hover:underline">
+              Sign Up
+            </Link>
           </div>
         </div>
       </main>

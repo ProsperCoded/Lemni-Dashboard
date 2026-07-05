@@ -3,18 +3,38 @@
 import React, { useState, useEffect, use } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import PublicPageShell from '@/components/PublicPageShell';
+import { checkoutApi, ApiError } from '@/lib/api-client';
+
+interface PlanDetails {
+  name: string;
+  amount: number;
+  billingModel: string;
+  interval: string | null;
+  trialDays: number;
+}
 
 export default function PreviewCheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const [plan, setPlan] = useState<PlanDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading plan data
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, []);
+    const loadPlan = async () => {
+      try {
+        const data = await checkoutApi.getPlanDetails(id);
+        setPlan(data);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Plan not found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlan();
+  }, [id]);
+
+  const formatPrice = (val: number) => `₦${val.toLocaleString('en-NG')}`;
 
   if (loading) {
     return (
@@ -22,6 +42,17 @@ export default function PreviewCheckoutPage({ params }: { params: Promise<{ id: 
         <span className="text-5xl font-extrabold animate-pulse mb-4" style={{ color: "#2DCA73" }}>∞</span>
         <p className="text-xs font-bold text-muted tracking-widest uppercase">Initializing Lemni Checkout...</p>
       </div>
+    );
+  }
+
+  if (error || !plan) {
+    return (
+      <PublicPageShell>
+        <div className="text-center py-8">
+          <h1 className="text-xl font-bold mb-2 text-foreground">Plan Not Found</h1>
+          <p className="text-sm text-muted">{error}</p>
+        </div>
+      </PublicPageShell>
     );
   }
 
@@ -39,7 +70,7 @@ export default function PreviewCheckoutPage({ params }: { params: Promise<{ id: 
       {/* Checkout Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 tracking-tight">Lemni Checkout Preview</h1>
-        <p className="text-xs text-muted font-medium">This is a merchant-only preview (plan ID: {id}).</p>
+        <p className="text-xs text-muted font-medium">This is a merchant-only preview of your live checkout page.</p>
       </div>
 
       {/* Subscription Summary */}
@@ -48,14 +79,22 @@ export default function PreviewCheckoutPage({ params }: { params: Promise<{ id: 
         <div className="bg-muted-bg border border-card-border p-4 rounded-xl space-y-1">
           <div className="flex justify-between items-start">
             <div className="pr-2">
-              <div className="text-sm font-bold text-foreground">Premium Membership</div>
-              <div className="text-[10px] text-muted font-medium mt-1 leading-relaxed">Full 24/7 access, trainer consulting, and spa perks.</div>
+              <div className="text-sm font-bold text-foreground">{plan.name}</div>
             </div>
             <div className="text-right whitespace-nowrap">
-              <div className="text-base font-extrabold text-foreground">₦12,500</div>
-              <div className="text-[10px] text-muted font-bold uppercase tracking-wider mt-0.5">/ Monthly</div>
+              <div className="text-base font-extrabold text-foreground">{formatPrice(plan.amount)}</div>
+              {plan.billingModel === 'recurring' && plan.interval && (
+                <div className="text-[10px] text-muted font-bold uppercase tracking-wider mt-0.5">
+                  / {plan.interval}
+                </div>
+              )}
             </div>
           </div>
+          {plan.trialDays > 0 && (
+            <p className="text-[10px] text-success font-semibold mt-2">
+              {plan.trialDays}-day free trial included
+            </p>
+          )}
         </div>
       </div>
 
