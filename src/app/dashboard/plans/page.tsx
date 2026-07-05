@@ -116,6 +116,17 @@ export default function PlansPage() {
     }
   };
 
+  const handleOpenLink = async (planId: string) => {
+    setLinkError(null);
+    try {
+      const { checkoutUrl } = await billingApi.getCheckoutLink(planId);
+      window.open(checkoutUrl, '_blank');
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to get checkout link';
+      setLinkError(message);
+    }
+  };
+
   const handleEditPlan = (plan: PlanRow) => {
     setEditingId(plan.id);
     setName(plan.name);
@@ -342,9 +353,9 @@ export default function PlansPage() {
                       )}
                     </button>
                     <button
-                      onClick={() => window.open(`/preview/${plan.id}`, '_blank')}
+                      onClick={() => handleOpenLink(plan.id)}
                       className="p-2 text-muted hover:text-foreground hover:bg-muted-bg rounded-lg transition-colors"
-                      title="Preview"
+                      title="Open checkout link"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
