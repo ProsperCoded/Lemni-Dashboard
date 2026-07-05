@@ -22,6 +22,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -67,10 +68,10 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="flex-1 overflow-y-auto bg-muted-bg/30 p-6 md:p-8">
           {children}

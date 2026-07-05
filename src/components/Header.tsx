@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, CheckCircle2, AlertTriangle, Info, User } from 'lucide-react';
+import { Bell, CheckCircle2, AlertTriangle, Info, User, Menu } from 'lucide-react';
 import { notificationLogApi, NotificationLogRow } from '@/lib/api-client';
 
 function timeAgo(dateString: string | null): string {
@@ -30,7 +30,11 @@ function getMerchantName(): string | null {
   }
 }
 
-export default function Header() {
+interface HeaderProps {
+  onMenuClick: () => void;
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const [alerts, setAlerts] = useState<NotificationLogRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -85,7 +89,14 @@ export default function Header() {
   return (
     <header className="h-16 border-b border-card-border bg-card-bg px-6 flex items-center justify-between sticky top-0 z-40 select-none no-print">
       {/* Title / Path indicator */}
-      <div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-lg border border-card-border hover:bg-muted-bg text-muted hover:text-foreground transition-all duration-200 cursor-pointer"
+          aria-label="Open menu"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
         <h1 className="text-base font-bold text-foreground tracking-tight">
           {getPageTitle()}
         </h1>
