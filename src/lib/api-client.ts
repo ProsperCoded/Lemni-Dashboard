@@ -300,6 +300,7 @@ export const checkoutApi = {
       billingModel: string;
       interval: string | null;
       trialDays: number;
+      trialRequireCard: boolean;
     }>(`/api/v1/checkout/plans/${planId}`, {
       method: 'GET',
       auth: false,
@@ -307,7 +308,12 @@ export const checkoutApi = {
   },
 
   async publicPlanCheckout(planId: string, data: { email: string; callbackUrl?: string }) {
-    return apiFetch<{ sessionId: string; subscriptionId: string; checkoutUrl: string }>(
+    return apiFetch<{
+      sessionId: string | null;
+      subscriptionId: string;
+      checkoutUrl: string | null;
+      trialing?: boolean;
+    }>(
       `/api/v1/checkout/plans/${planId}/sessions`,
       {
         method: 'POST',

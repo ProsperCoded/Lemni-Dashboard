@@ -147,6 +147,81 @@ export default function SettingsPage() {
 
       <div className="space-y-8 max-w-4xl">
 
+        {/* Telegram Section */}
+        <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
+          <div className="flex items-center gap-2 border-b border-card-border pb-4">
+            <Bell className="w-5 h-5 text-accent" />
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Telegram Notifications</h3>
+              <p className="text-xs text-muted">Bot alerts for billing events, failures, and dunning runs</p>
+            </div>
+          </div>
+
+          {telegramError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+              <p className="text-xs font-semibold text-rose-500">{telegramError}</p>
+            </div>
+          )}
+
+          {telegramLoading ? (
+            <div className="flex justify-center py-4">
+              <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : telegramConnected ? (
+            <div className="flex items-center justify-between p-4 border border-success-border bg-success-bg rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-success-bg border-success-border text-success">
+                  Connected
+                </span>
+                {telegramChatId && (
+                  <span className="text-xs text-muted font-mono">{telegramChatId}</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleDisconnectTelegram}
+                disabled={telegramActionLoading}
+                className="px-3 py-2 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-muted">
+                Connect your Telegram account to receive real-time billing alerts.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleConnectTelegram}
+                  disabled={telegramActionLoading}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 cursor-pointer"
+                >
+                  {telegramActionLoading ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" /> Connect Telegram
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={loadTelegramStatus}
+                  className="p-2 rounded-lg border border-card-border hover:bg-muted-bg text-muted hover:text-foreground transition-all duration-200"
+                  title="Refresh status"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[10px] text-muted">
+                Tap Start in Telegram, then click Refresh Status.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* API Keys Manager Section */}
         <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
           <div className="flex items-center gap-2 border-b border-card-border pb-4">
@@ -290,81 +365,6 @@ export default function SettingsPage() {
               Coming soon — self-service webhook configuration is not yet available.
             </span>
           </div>
-        </div>
-
-        {/* Telegram Section */}
-        <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-2 border-b border-card-border pb-4">
-            <Bell className="w-5 h-5 text-accent" />
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Telegram Notifications</h3>
-              <p className="text-xs text-muted">Bot alerts for billing events, failures, and dunning runs</p>
-            </div>
-          </div>
-
-          {telegramError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
-              <p className="text-xs font-semibold text-rose-500">{telegramError}</p>
-            </div>
-          )}
-
-          {telegramLoading ? (
-            <div className="flex justify-center py-4">
-              <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : telegramConnected ? (
-            <div className="flex items-center justify-between p-4 border border-success-border bg-success-bg rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-success-bg border-success-border text-success">
-                  Connected
-                </span>
-                {telegramChatId && (
-                  <span className="text-xs text-muted font-mono">{telegramChatId}</span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleDisconnectTelegram}
-                disabled={telegramActionLoading}
-                className="px-3 py-2 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                Disconnect
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-muted">
-                Connect your Telegram account to receive real-time billing alerts.
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleConnectTelegram}
-                  disabled={telegramActionLoading}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 cursor-pointer"
-                >
-                  {telegramActionLoading ? (
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" /> Connect Telegram
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={loadTelegramStatus}
-                  className="p-2 rounded-lg border border-card-border hover:bg-muted-bg text-muted hover:text-foreground transition-all duration-200"
-                  title="Refresh status"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-[10px] text-muted">
-                Tap Start in Telegram, then click Refresh Status.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* WhatsApp & Grace Period - Disabled Placeholders */}
