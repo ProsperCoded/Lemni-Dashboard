@@ -1,63 +1,99 @@
+'use client';
+
+import React from "react";
+import Link from "next/link";
+import { CreditCard, RefreshCw, Activity } from "lucide-react";
+import GradientCanvas from "@/components/GradientCanvas";
+
 import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden font-sans">
+      {/* Header / Nav */}
+      <header className="absolute top-0 left-0 w-full px-6 md:px-12 lg:px-16 py-6 flex items-center justify-between no-print bg-transparent z-[100]">
+        <div className="flex items-center gap-3">
+          {/* Infinity Symbol Logo in #2DCA73 */}
+          <span 
+            className="text-3xl font-extrabold select-none transition-transform hover:scale-110 duration-200" 
+            style={{ color: "#2DCA73" }}
+          >
+            ∞
+          </span>
+          <span className="font-cursive text-3xl tracking-wide select-none font-bold">
+            Lemni
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Empty Nav Area (Removed Features, Nomba Bridge, and Pricing links) */}
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
+        </nav>
+
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/login" 
+            className="px-4 py-2 text-sm font-semibold bg-white text-black border border-card-border rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Sign In
+          </Link>
+          
+          <Link
+            href="/dashboard"
+            className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-bold text-white bg-[#12B76A] hover:bg-[#0e9f5d] rounded-lg transition-colors shadow-sm cursor-pointer"
           >
-            Documentation
-          </a>
+            Dashboard
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Content Hero */}
+      <main className="relative flex-1 flex flex-col lg:flex-row items-center h-[calc(100vh-64px)] overflow-hidden max-w-7xl mx-auto w-full px-6 md:px-12 lg:px-16 pt-24">
+        
+        {/* Left Column / Hero Text (65% Width) */}
+        <div className="w-full lg:w-[65%] py-8 z-10 flex flex-col justify-center h-full order-1 lg:order-none">
+          <p className="text-[28px] sm:text-[36px] md:text-[40px] leading-[1.2] tracking-tight mb-10 max-w-2xl pr-4">
+            <span className="text-[#0A2540] font-medium">Billing infrastructure to scale your subscription revenue.</span>{" "}
+            <span className="text-[#425466] font-medium">Automate revenue recovery and deploy flexible billing plans.</span>
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link
+              href="/dashboard"
+              className="flex items-center justify-center px-6 py-3.5 text-sm font-bold text-white bg-[#12B76A] hover:bg-[#0e9f5d] rounded-lg transition-all shadow-md shadow-[#12B76A]/10 cursor-pointer w-fit"
+            >
+              Enter Merchant Dashboard
+            </Link>
+            
+            <Link
+              href="/login"
+              className="flex items-center justify-center px-6 py-3.5 text-sm font-semibold bg-white text-black border border-card-border rounded-lg hover:bg-gray-100 transition-colors w-fit"
+            >
+              Sign In to Lemni
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Column (or Bottom on Mobile) / Infinity 3D Text Mask (35% Width) */}
+        <div className="w-full lg:w-[35%] h-[40vh] lg:h-full relative flex items-center justify-center overflow-hidden z-0 order-2 lg:order-none lg:-translate-x-12">
+          
+          {/* The WebGL Canvas */}
+          <div className="absolute inset-0 w-full h-full scale-125">
+            <GradientCanvas />
+          </div>
+
+          {/* CSS Mix-Blend Cutout Mask (White background, transparent infinity symbol) */}
+          <div className="absolute inset-0 bg-background text-black mix-blend-screen flex items-center justify-center pointer-events-none select-none">
+            <span className="text-[15rem] sm:text-[18rem] md:text-[22rem] lg:text-[28rem] leading-none font-black tracking-tighter pb-10">
+              ∞
+            </span>
+          </div>
+
+        </div>
+
+        {/* Bottom Right "Powered by Nomba" Capsule */}
+        <div className="absolute bottom-8 right-8 z-20 hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-card-border/50 bg-white/80 backdrop-blur-md shadow-lg text-[10px] font-bold tracking-wider uppercase text-muted">
+          <Image src="/nomba_logo.png" alt="Nomba" width={16} height={16} className="object-contain" />
+          Powered by Nomba
         </div>
       </main>
     </div>
