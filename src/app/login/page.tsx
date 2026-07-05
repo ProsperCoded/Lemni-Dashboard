@@ -4,21 +4,29 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
+import { authApi, setTokens, ApiError } from '@/lib/api-client';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Mock authentication delay
-    setTimeout(() => {
-      localStorage.setItem('isAuthenticated', 'true');
+    setError(null);
+    try {
+      const response = await authApi.login(email, password);
+      setTokens(response.accessToken, response.refreshToken, response.merchant);
       router.push('/dashboard');
-    }, 800);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,6 +58,12 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+              <p className="text-xs font-semibold text-rose-500">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
@@ -75,9 +89,9 @@ export default function LoginPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-muted">
                   Password
                 </label>
-                <a href="#" className="text-xs font-semibold text-accent hover:underline">
+                <Link href="/forgot-password" className="text-xs font-semibold text-accent hover:underline">
                   Forgot Password?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-muted">

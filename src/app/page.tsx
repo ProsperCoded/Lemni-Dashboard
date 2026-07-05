@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { CreditCard, RefreshCw, Activity } from "lucide-react";
 import GradientCanvas from "@/components/GradientCanvas";
 
 import Image from "next/image";

@@ -2,15 +2,16 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Settings, 
-  FileText, 
-  ClipboardList, 
-  Bell, 
-  LogOut 
+import { useRouter, usePathname } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Settings,
+  FileText,
+  ClipboardList,
+  Bell,
+  LogOut
 } from 'lucide-react';
+import { clearTokens, authApi } from '@/lib/api-client';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -21,10 +22,18 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+  const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      clearTokens();
+      router.push('/login');
+    }
   };
 
   return (
@@ -69,14 +78,13 @@ export default function Sidebar() {
 
       {/* Sidebar Footer / User section */}
       <div className="p-4 border-t border-card-border">
-        <Link
-          href="/"
+        <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-rose-500 rounded-lg hover:bg-rose-500/10 border border-transparent transition-colors group cursor-pointer"
+          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-semibold text-rose-500 rounded-lg hover:bg-rose-500/10 border border-transparent transition-colors group cursor-pointer"
         >
           <LogOut className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           Sign Out
-        </Link>
+        </button>
       </div>
     </aside>
   );

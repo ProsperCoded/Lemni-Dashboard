@@ -4,6 +4,16 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import { getAccessToken, getRefreshToken, setTokens, clearTokens, authApi } from '@/lib/api-client';
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
 
 export default function DashboardLayout({
   children,
@@ -14,12 +24,34 @@ export default function DashboardLayout({
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    const auth = localStorage.getItem('isAuthenticated');
-    if (!auth) {
-      router.push('/login');
-    } else {
+    const checkAuth = async () => {
+      const token = getAccessToken();
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      if (isTokenExpired(token)) {
+        const refreshToken = getRefreshToken();
+        if (!refreshToken) {
+          clearTokens();
+          router.push('/login');
+          return;
+        }
+        try {
+          const response = await authApi.refresh(refreshToken);
+          setTokens(response.accessToken, refreshToken);
+        } catch {
+          clearTokens();
+          router.push('/login');
+          return;
+        }
+      }
+
       setAuthorized(true);
-    }
+    };
+
+    checkAuth();
   }, [router]);
 
   if (!authorized) {
