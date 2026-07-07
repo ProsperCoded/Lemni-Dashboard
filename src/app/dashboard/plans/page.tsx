@@ -390,201 +390,224 @@ export default function PlansPage() {
             </div>
           )}
 
-          <form
-            onSubmit={
-              aiMode === "single" ? handleGenerateWithAi : handleGenerateLadder
-            }
-            className="flex flex-col sm:flex-row gap-3"
-          >
-            <input
-              type="text"
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder={
-                aiMode === "single"
-                  ? "e.g. Bill users ₦5,000 monthly, with a 14-day free trial, no card required upfront"
-                  : "e.g. I run a gym and want three membership tiers"
-              }
-              className="flex-1 px-3 py-2 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={aiLoading || !aiPrompt.trim()}
-              className="px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
-            >
-              {aiLoading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : aiMode === "single" ? (
-                <>
-                  <Sparkles className="w-4 h-4" /> Generate
-                </>
-              ) : (
-                <>
-                  <Layers className="w-4 h-4" /> Design Ladder
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Example prompt chips */}
-          <div className="flex flex-wrap gap-2">
-            {(aiMode === "single"
-              ? [
-                  "₦12,500/mo gym membership, 7-day trial",
-                  "One-time ₦25,000 course fee",
-                  "Yearly ₦120,000 pro plan",
-                ]
-              : [
-                  "I run a gym, three membership tiers",
-                  "SaaS tool: free, pro, and business tiers",
-                  "Streaming service, basic to premium",
-                ]
-            ).map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => setAiPrompt(chip)}
-                className="text-[11px] font-medium px-2.5 py-1 rounded-full border border-card-border text-muted hover:text-foreground hover:border-[#2DCA73]/40 hover:bg-[#2DCA73]/5 transition-colors cursor-pointer"
+          {aiBuilderOpen && (
+            <>
+              <form
+                onSubmit={
+                  aiMode === "single"
+                    ? handleGenerateWithAi
+                    : handleGenerateLadder
+                }
+                className="flex flex-col sm:flex-row gap-3"
               >
-                {chip}
-              </button>
-            ))}
-          </div>
+                <input
+                  type="text"
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder={
+                    aiMode === "single"
+                      ? "e.g. Bill users ₦5,000 monthly, with a 14-day free trial, no card required upfront"
+                      : "e.g. I run a gym and want three membership tiers"
+                  }
+                  className="flex-1 px-4 py-3.5 text-base bg-background border border-card-border rounded-lg focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={aiLoading || !aiPrompt.trim()}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  {aiLoading ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : aiMode === "single" ? (
+                    <>
+                      <Sparkles className="w-4 h-4" /> Generate
+                    </>
+                  ) : (
+                    <>
+                      <Layers className="w-4 h-4" /> Design Ladder
+                    </>
+                  )}
+                </button>
+              </form>
 
-          {/* Single-mode: defaulted-field warnings */}
-          {aiMode === "single" && aiWarnings.length > 0 && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
-                Defaulted fields — please review
-              </p>
-              <ul className="text-xs text-amber-700 space-y-0.5 list-disc list-inside">
-                {aiWarnings.map((w, i) => (
-                  <li key={i}>{w}</li>
+              {/* Example prompt chips */}
+              <div className="flex flex-wrap gap-2">
+                {(aiMode === "single"
+                  ? [
+                      "₦12,500/mo gym membership, 7-day trial",
+                      "One-time ₦25,000 course fee",
+                      "Yearly ₦120,000 pro plan",
+                    ]
+                  : [
+                      "I run a gym, three membership tiers",
+                      "SaaS tool: free, pro, and business tiers",
+                      "Streaming service, basic to premium",
+                    ]
+                ).map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setAiPrompt(chip)}
+                    className="text-[11px] font-medium px-2.5 py-1 rounded-full border border-card-border text-muted hover:text-foreground hover:border-[#2DCA73]/40 hover:bg-[#2DCA73]/5 transition-colors cursor-pointer"
+                  >
+                    {chip}
+                  </button>
                 ))}
-              </ul>
-            </div>
-          )}
+              </div>
 
-          {/* Ladder success banner */}
-          {aiMode === "ladder" && ladderCreated && (
-            <div className="p-3 bg-success-bg border border-success-border rounded-lg flex items-center gap-2">
-              <Check className="w-4 h-4 text-success" />
-              <p className="text-xs font-semibold text-success">
-                {ladderCreated}
-              </p>
-            </div>
-          )}
-
-          {/* Ladder results */}
-          {aiMode === "ladder" && ladderTiers.length > 0 && (
-            <div className="space-y-4 pt-2">
-              {ladderStrategy && (
-                <div className="p-3 bg-background border border-card-border rounded-lg">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3" /> Pricing Strategy
+              {/* Single-mode: defaulted-field warnings */}
+              {aiMode === "single" && aiWarnings.length > 0 && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                    Defaulted fields — please review
                   </p>
-                  <p className="text-xs text-muted leading-relaxed">
-                    {ladderStrategy}
+                  <ul className="text-xs text-amber-700 space-y-0.5 list-disc list-inside">
+                    {aiWarnings.map((w, i) => (
+                      <li key={i}>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Ladder success banner */}
+              {aiMode === "ladder" && ladderCreated && (
+                <div className="p-3 bg-success-bg border border-success-border rounded-lg flex items-center gap-2">
+                  <Check className="w-4 h-4 text-success" />
+                  <p className="text-xs font-semibold text-success">
+                    {ladderCreated}
                   </p>
                 </div>
               )}
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {ladderTiers.map((tier, idx) => {
-                  const mrr = estimateMonthlyRevenue(tier);
-                  const highlight =
-                    idx === Math.floor((ladderTiers.length - 1) / 2);
-                  return (
-                    <div
-                      key={`${tier.name}-${idx}`}
-                      className={`relative rounded-xl border p-4 flex flex-col gap-3 transition-all ${
-                        highlight
-                          ? "border-[#2DCA73]/50 bg-[#2DCA73]/5 shadow-[0_4px_20px_-4px_rgba(45,202,115,0.2)]"
-                          : "border-card-border bg-background"
-                      }`}
-                    >
-                      {highlight && (
-                        <span className="absolute -top-2 left-4 text-[9px] font-bold uppercase tracking-wider bg-[#2DCA73] text-white px-2 py-0.5 rounded-full">
-                          Popular
-                        </span>
-                      )}
-                      <div>
-                        <p className="text-sm font-bold text-foreground">
-                          {tier.name}
-                        </p>
-                        <p className="text-[11px] text-muted leading-snug mt-0.5">
-                          {tier.tagline}
-                        </p>
-                      </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-extrabold text-foreground">
-                          {formatPrice(tier.amount)}
-                        </span>
-                        <span className="text-[10px] text-muted font-semibold uppercase">
-                          {tier.billingModel === "recurring"
-                            ? `/ ${tier.interval}`
-                            : "one-time"}
-                        </span>
-                      </div>
-                      <div className="space-y-1 text-[11px] text-muted">
-                        {tier.trialDays > 0 && (
-                          <p>
-                            ✓ {tier.trialDays}-day free trial
-                            {tier.trialRequireCard ? " (card required)" : ""}
-                          </p>
-                        )}
-                        {tier.gracePeriodDays > 0 && (
-                          <p>✓ {tier.gracePeriodDays}-day grace period</p>
-                        )}
-                        {mrr !== null && (
-                          <p className="flex items-center gap-1 text-[#2DCA73] font-semibold pt-1">
-                            <TrendingUp className="w-3 h-3" /> ≈{" "}
-                            {formatPrice(mrr)}/mo at {MRR_SAMPLE_SUBS} subs
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => loadTierIntoForm(tier)}
-                        className="mt-auto text-[11px] font-semibold text-muted hover:text-foreground flex items-center gap-1.5 self-start cursor-pointer"
-                      >
-                        <SlidersHorizontal className="w-3 h-3" /> Fine-tune in
-                        form
-                      </button>
+              {/* Ladder results */}
+              {aiMode === "ladder" && ladderTiers.length > 0 && (
+                <div className="space-y-4 pt-2">
+                  {ladderStrategy && (
+                    <div className="p-3 bg-background border border-card-border rounded-lg">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3" /> Pricing Strategy
+                      </p>
+                      <p className="text-xs text-muted leading-relaxed">
+                        {ladderStrategy}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleCreateAllTiers}
-                  disabled={ladderCreating}
-                  className="px-4 py-2 text-sm font-bold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 cursor-pointer"
-                >
-                  {ladderCreating ? (
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" /> Create all{" "}
-                      {ladderTiers.length} tiers
-                    </>
                   )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLadderTiers([]);
-                    setLadderStrategy(null);
-                  }}
-                  className="px-4 py-2 text-sm font-semibold border border-card-border hover:bg-muted-bg rounded-lg transition-colors cursor-pointer"
-                >
-                  Discard
-                </button>
-              </div>
-            </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {ladderTiers.map((tier, idx) => {
+                      const mrr = estimateMonthlyRevenue(tier);
+                      const highlight =
+                        idx === Math.floor((ladderTiers.length - 1) / 2);
+                      return (
+                        <div
+                          key={`${tier.name}-${idx}`}
+                          className={`relative rounded-xl border p-4 flex flex-col gap-3 transition-all ${
+                            highlight
+                              ? "border-[#2DCA73]/50 bg-[#2DCA73]/5 shadow-[0_4px_20px_-4px_rgba(45,202,115,0.2)]"
+                              : "border-card-border bg-background"
+                          }`}
+                        >
+                          {highlight && (
+                            <span className="absolute -top-2 left-4 text-[9px] font-bold uppercase tracking-wider bg-[#2DCA73] text-white px-2 py-0.5 rounded-full">
+                              Popular
+                            </span>
+                          )}
+                          <div>
+                            <p className="text-sm font-bold text-foreground">
+                              {tier.name}
+                            </p>
+                            <p className="text-[11px] text-muted leading-snug mt-0.5">
+                              {tier.tagline}
+                            </p>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-extrabold text-foreground">
+                              {formatPrice(tier.amount)}
+                            </span>
+                            <span className="text-[10px] text-muted font-semibold uppercase">
+                              {tier.billingModel === "recurring"
+                                ? `/ ${tier.interval}`
+                                : "one-time"}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-[11px] text-muted">
+                            {tier.trialDays > 0 && (
+                              <p>
+                                ✓ {tier.trialDays}-day free trial
+                                {tier.trialRequireCard ? " (card required)" : ""}
+                              </p>
+                            )}
+                            {tier.gracePeriodDays > 0 && (
+                              <p>✓ {tier.gracePeriodDays}-day grace period</p>
+                            )}
+                            {mrr !== null && (
+                              <p className="flex items-center gap-1 text-[#2DCA73] font-semibold pt-1">
+                                <TrendingUp className="w-3 h-3" /> ≈{" "}
+                                {formatPrice(mrr)}/mo at {MRR_SAMPLE_SUBS} subs
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => loadTierIntoForm(tier)}
+                            className="mt-auto text-[11px] font-semibold text-muted hover:text-foreground flex items-center gap-1.5 self-start cursor-pointer"
+                          >
+                            <SlidersHorizontal className="w-3 h-3" /> Fine-tune
+                            in form
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCreateAllTiers}
+                      disabled={ladderCreating}
+                      className="px-4 py-2 text-sm font-bold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 cursor-pointer"
+                    >
+                      {ladderCreating ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4" /> Create all{" "}
+                          {ladderTiers.length} tiers
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLadderTiers([]);
+                        setLadderStrategy(null);
+                      }}
+                      className="px-4 py-2 text-sm font-semibold border border-card-border hover:bg-muted-bg rounded-lg transition-colors cursor-pointer"
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
+
+          {/* Collapse toggle */}
+          <button
+            type="button"
+            onClick={() => setAiBuilderOpen((v) => !v)}
+            aria-label={
+              aiBuilderOpen ? "Collapse AI Plan Builder" : "Expand AI Plan Builder"
+            }
+            aria-expanded={aiBuilderOpen}
+            className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-card-bg border border-card-border shadow-sm text-muted hover:text-foreground hover:border-[#2DCA73]/40 transition-all cursor-pointer"
+          >
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${
+                aiBuilderOpen ? "" : "rotate-180"
+              }`}
+            />
+          </button>
         </div>
 
         {/* Plan Form */}
