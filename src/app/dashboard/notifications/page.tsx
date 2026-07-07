@@ -1,72 +1,106 @@
 'use client';
 
-import React, { useState } from 'react';
-import { 
-  Bell, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Info, 
-  Search, 
+import React, { useEffect, useState } from 'react';
+import {
+  Bell,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  Search,
   Trash2,
-  Check 
+  Check
 } from 'lucide-react';
+import { notificationLogApi, NotificationLogRow, ApiError } from '@/lib/api-client';
 
-interface NotificationLog {
-  id: string;
-  type: 'success' | 'warning' | 'info';
-  message: string;
-  timestamp: string;
-  category: 'payment' | 'system' | 'subscription';
-  read: boolean;
+function formatDate(dateString: string | null): string {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
 }
 
-const initialLogs: NotificationLog[] = [
-  { id: '1', type: 'warning', message: 'Payment attempt failed for user_7294 (Standard Plan) due to Insufficient Funds. Nomba retry scheduled on Jul 4, 2026, 08:00.', timestamp: 'Jul 03, 2026, 20:14', category: 'payment', read: false },
-  { id: '2', type: 'success', message: 'Nomba API connection bridge restored. Uptime metrics normal.', timestamp: 'Jul 03, 2026, 19:15', category: 'system', read: false },
-  { id: '3', type: 'info', message: 'Manual plan "Max Membership" price updated to ₦25,000 by admin.', timestamp: 'Jul 03, 2026, 17:05', category: 'subscription', read: true },
-  { id: '4', type: 'success', message: 'Successful collection of ₦12,500.00 for user_9931 (Standard Plan). Subscription active.', timestamp: 'Jul 03, 2026, 15:30', category: 'payment', read: true },
-  { id: '5', type: 'warning', message: 'Grace period expired for user_3950 (Basic Plan) after 5 failed payment retries. Access locked.', timestamp: 'Jul 03, 2026, 11:12', category: 'subscription', read: true },
-  { id: '6', type: 'info', message: 'New customer card authorization tokenized for user_8820.', timestamp: 'Jul 02, 2026, 22:45', category: 'payment', read: true },
-];
-
 export default function NotificationsPage() {
-  const [logs, setLogs] = useState<NotificationLog[]>(initialLogs);
+  const [logs, setLogs] = useState<NotificationLogRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'success' | 'warning' | 'info'>('all');
 
-  // Filter logs
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.message.toLowerCase().includes(search.toLowerCase()) || 
-                          log.category.toLowerCase().includes(search.toLowerCase());
-    
-    if (activeTab === 'all') return matchesSearch;
-    return log.type === activeTab && matchesSearch;
-  });
-
-  const handleMarkAllRead = () => {
-    setLogs(logs.map(log => ({ ...log, read: true })));
-  };
-
-  const handleClearLogs = () => {
-    if (confirm('Are you sure you want to clear all notification logs?')) {
-      setLogs([]);
+  const loadLogs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await notificationLogApi.list({ limit: '100' });
+      setLogs(result.data);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to load notification logs';
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleToggleRead = (id: string) => {
-    setLogs(logs.map(log => log.id === id ? { ...log, read: !log.read } : log));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadLogs();
+  }, []);
+
+  // Filter logs (client-side, on already-loaded page)
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = log.message.toLowerCase().includes(search.toLowerCase()) ||
+                          log.category.toLowerCase().includes(search.toLowerCase());
+
+    if (activeTab === 'all') return matchesSearch;
+    return log.severity === activeTab && matchesSearch;
+  });
+
+  const handleMarkAllRead = async () => {
+    setLogs(logs.map(log => ({ ...log, read: true })));
+    try {
+      await notificationLogApi.markRead({ all: true });
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to mark notifications as read';
+      setError(message);
+    }
+  };
+
+  const handleClearLogs = async () => {
+    if (!confirm('Are you sure you want to permanently clear all notification logs? This cannot be undone.')) return;
+
+    const previousLogs = logs;
+    setLogs([]);
+    try {
+      await notificationLogApi.clear();
+    } catch (err) {
+      setLogs(previousLogs);
+      const message = err instanceof ApiError ? err.message : 'Failed to clear notification logs';
+      setError(message);
+    }
+  };
+
+  const handleToggleRead = async (id: string) => {
+    const log = logs.find(l => l.id === id);
+    if (!log) return;
+    const nextRead = !log.read;
+    setLogs(logs.map(l => l.id === id ? { ...l, read: nextRead } : l));
+    try {
+      await notificationLogApi.markRead({ ids: [id], read: nextRead });
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to update notification';
+      setError(message);
+    }
   };
 
   return (
     <div className="space-y-8 select-none">
-      
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-foreground">Notification Audit Logs</h2>
           <p className="text-sm text-muted">Complete historical trail of subscription, payment, and system activities.</p>
         </div>
-        
+
         {logs.length > 0 && (
           <div className="flex gap-2">
             <button
@@ -87,6 +121,12 @@ export default function NotificationsPage() {
         )}
       </div>
 
+      {error && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-lg p-4">
+          <p className="text-sm font-semibold text-rose-500">{error}</p>
+        </div>
+      )}
+
       {/* Filter and Search controls */}
       <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-card-bg border border-card-border p-4 rounded-xl shadow-sm">
         {/* Severity Tabs */}
@@ -96,8 +136,8 @@ export default function NotificationsPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                activeTab === tab 
-                  ? 'bg-foreground text-background shadow-sm' 
+                activeTab === tab
+                  ? 'bg-foreground text-background shadow-sm'
                   : 'text-muted hover:text-foreground hover:bg-muted-bg'
               }`}
             >
@@ -123,7 +163,11 @@ export default function NotificationsPage() {
 
       {/* Logs List Panel */}
       <div className="bg-card-bg border border-card-border rounded-xl shadow-sm overflow-hidden">
-        {filteredLogs.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <span className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredLogs.length === 0 ? (
           <div className="py-12 text-center text-xs text-muted flex flex-col items-center gap-2">
             <Bell className="w-8 h-8 text-muted/55" />
             No notification logs match your filters.
@@ -131,17 +175,17 @@ export default function NotificationsPage() {
         ) : (
           <div className="divide-y divide-card-border">
             {filteredLogs.map((log) => (
-              <div 
-                key={log.id} 
+              <div
+                key={log.id}
                 className={`p-5 flex gap-4 transition-colors hover:bg-muted-bg/30 ${
                   !log.read ? 'bg-accent/5' : ''
                 }`}
               >
                 {/* Icon type */}
                 <div className="mt-0.5">
-                  {log.type === 'success' && <CheckCircle2 className="w-5 h-5 text-success" />}
-                  {log.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
-                  {log.type === 'info' && <Info className="w-5 h-5 text-blue-500" />}
+                  {log.severity === 'success' && <CheckCircle2 className="w-5 h-5 text-success" />}
+                  {log.severity === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
+                  {log.severity === 'info' && <Info className="w-5 h-5 text-blue-500" />}
                 </div>
 
                 {/* Log details */}
@@ -154,9 +198,9 @@ export default function NotificationsPage() {
                       {log.category}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 text-[10px] text-muted pt-1">
-                    <span>{log.timestamp}</span>
+                    <span>{formatDate(log.createdAt)}</span>
                     <span>·</span>
                     <button
                       onClick={() => handleToggleRead(log.id)}

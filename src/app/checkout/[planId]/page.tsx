@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
-import { ArrowRight, Mail } from 'lucide-react';
+import { ArrowRight, Mail, CheckCircle2 } from 'lucide-react';
 import PublicPageShell from '@/components/PublicPageShell';
 import { checkoutApi, ApiError } from '@/lib/api-client';
 
@@ -11,9 +11,10 @@ interface PlanDetails {
   billingModel: string;
   interval: string | null;
   trialDays: number;
+  trialRequireCard: boolean;
 }
 
-type PageStatus = 'loading' | 'form' | 'submitting' | 'redirecting' | 'error';
+type PageStatus = 'loading' | 'form' | 'submitting' | 'redirecting' | 'trial-started' | 'error';
 
 export default function CheckoutPage({ params }: { params: Promise<{ planId: string }> }) {
   const { planId } = use(params);
@@ -44,8 +45,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ planId: str
 
     try {
       const result = await checkoutApi.publicPlanCheckout(planId, { email });
+      if (result.trialing && !result.checkoutUrl) {
+        setStatus('trial-started');
+        return;
+      }
       setStatus('redirecting');
-      window.location.href = result.checkoutUrl;
+      window.location.href = result.checkoutUrl as string;
     } catch (err) {
       setErrorMessage(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
       setStatus('form');
@@ -86,12 +91,40 @@ export default function CheckoutPage({ params }: { params: Promise<{ planId: str
     );
   }
 
+  if (status === 'trial-started') {
+    return (
+      <PublicPageShell>
+        <div className="text-center py-8 space-y-4">
+          <div className="flex justify-center">
+            <div className="w-12 h-12 bg-success-bg border border-success-border rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-success" />
+            </div>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold mb-1 text-foreground">Your trial has started</h1>
+            <p className="text-sm text-muted">
+              {plan?.trialDays}-day free trial for {plan?.name}. No payment was made — check your email for confirmation.
+            </p>
+          </div>
+        </div>
+      </PublicPageShell>
+    );
+  }
+
   return (
     <PublicPageShell>
       {/* Checkout Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1 tracking-tight">Complete Your Subscription</h1>
-        <p className="text-xs text-muted font-medium">Enter your email to proceed to secure payment.</p>
+        <h1 className="text-2xl font-bold mb-1 tracking-tight">
+          {plan && plan.trialDays > 0 ? 'Start Your Free Trial' : 'Complete Your Subscription'}
+        </h1>
+        <p className="text-xs text-muted font-medium">
+          {plan && plan.trialDays > 0
+            ? plan.trialRequireCard
+              ? 'Enter your email to verify your card — you will not be charged today.'
+              : 'Enter your email to start — no payment required.'
+            : 'Enter your email to proceed to secure payment.'}
+        </p>
       </div>
 
       {/* Plan Summary */}
@@ -104,17 +137,21 @@ export default function CheckoutPage({ params }: { params: Promise<{ planId: str
                 <div className="text-sm font-bold text-foreground">{plan.name}</div>
               </div>
               <div className="text-right whitespace-nowrap">
-                <div className="text-base font-extrabold text-foreground">{formatPrice(plan.amount)}</div>
+                <div className="text-base font-extrabold text-foreground">
+                  {plan.trialDays > 0 ? '₦0' : formatPrice(plan.amount)}
+                </div>
                 {plan.billingModel === 'recurring' && plan.interval && (
                   <div className="text-[10px] text-muted font-bold uppercase tracking-wider mt-0.5">
-                    / {plan.interval}
+                    {plan.trialDays > 0 ? 'today' : `/ ${plan.interval}`}
                   </div>
                 )}
               </div>
             </div>
             {plan.trialDays > 0 && (
               <p className="text-[10px] text-success font-semibold mt-2">
-                {plan.trialDays}-day free trial included
+                {plan.trialDays}-day free trial, then {formatPrice(plan.amount)}
+                {plan.billingModel === 'recurring' && plan.interval ? ` / ${plan.interval}` : ''}
+                {plan.trialRequireCard ? ' — card verified now, not charged' : ' — no card required now'}
               </p>
             )}
           </div>
@@ -157,7 +194,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ planId: str
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              Continue to Payment
+              {plan && plan.trialDays > 0
+                ? plan.trialRequireCard
+                  ? 'Verify Card & Start Trial'
+                  : 'Start Free Trial'
+                : 'Continue to Payment'}
               <ArrowRight className="w-4 h-4" />
             </>
           )}

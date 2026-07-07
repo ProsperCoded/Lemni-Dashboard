@@ -49,6 +49,17 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Override browser autofill yellow highlight with light grey */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 9999px #f8f9fa inset !important;
+  box-shadow: 0 0 0 9999px #f8f9fa inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000;
+}
+
 /* Custom styles for printing */
 @media print {
   body {

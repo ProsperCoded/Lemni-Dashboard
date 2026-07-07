@@ -300,6 +300,7 @@ export const checkoutApi = {
       billingModel: string;
       interval: string | null;
       trialDays: number;
+      trialRequireCard: boolean;
     }>(`/api/v1/checkout/plans/${planId}`, {
       method: 'GET',
       auth: false,
@@ -307,7 +308,12 @@ export const checkoutApi = {
   },
 
   async publicPlanCheckout(planId: string, data: { email: string; callbackUrl?: string }) {
-    return apiFetch<{ sessionId: string; subscriptionId: string; checkoutUrl: string }>(
+    return apiFetch<{
+      sessionId: string | null;
+      subscriptionId: string;
+      checkoutUrl: string | null;
+      trialing?: boolean;
+    }>(
       `/api/v1/checkout/plans/${planId}/sessions`,
       {
         method: 'POST',
@@ -384,6 +390,129 @@ export const telegramApi = {
         auth: true,
       },
     );
+  },
+};
+
+// Audit API (Disputes page)
+export interface CustomerRow {
+  id: string;
+  email: string;
+  createdAt: string | null;
+  signupIp: string | null;
+  signupUserAgent: string | null;
+  status: 'trialing' | 'active' | 'past_due' | 'canceled' | null;
+  planName: string | null;
+  planAmount: number | null;
+}
+
+export interface CustomerAuditDetail {
+  customer: {
+    id: string;
+    email: string;
+    createdAt: string | null;
+    signupIp: string | null;
+    signupUserAgent: string | null;
+  };
+  subscriptions: Array<{
+    id: string;
+    status: 'trialing' | 'active' | 'past_due' | 'canceled';
+    planName: string;
+    planAmount: number;
+    planInterval: 'weekly' | 'monthly' | 'yearly' | null;
+    createdAt: string | null;
+  }>;
+  payments: Array<{
+    id: string;
+    amount: number;
+    status: 'pending' | 'success' | 'failed';
+    nombaRef: string | null;
+    createdAt: string | null;
+  }>;
+  timeline: Array<{
+    id: string;
+    action: string;
+    details: string | null;
+    metadata: Record<string, unknown> | null;
+    createdAt: string | null;
+  }>;
+}
+
+export const auditApi = {
+  async listCustomers(filters?: { search?: string; limit?: string; offset?: string }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+    }
+    return apiFetch<{
+      data: CustomerRow[];
+      pagination: { total: number; limit: number; offset: number };
+    }>(`/admin/customers?${params.toString()}`, {
+      method: 'GET',
+      auth: true,
+    });
+  },
+
+  async getCustomerAudit(customerId: string) {
+    return apiFetch<CustomerAuditDetail>(`/admin/customers/${customerId}/audit`, {
+      method: 'GET',
+      auth: true,
+    });
+  },
+};
+
+// Notification Log API
+export interface NotificationLogRow {
+  id: string;
+  merchantId: string;
+  eventType: string;
+  category: 'payment' | 'system' | 'subscription';
+  severity: 'success' | 'warning' | 'info';
+  message: string;
+  subscriptionId: string | null;
+  delivered: boolean;
+  read: boolean;
+  createdAt: string | null;
+}
+
+export const notificationLogApi = {
+  async list(filters?: {
+    severity?: string;
+    category?: string;
+    search?: string;
+    limit?: string;
+    offset?: string;
+  }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+    }
+    return apiFetch<{
+      data: NotificationLogRow[];
+      pagination: { total: number; limit: number; offset: number };
+      unreadCount: number;
+    }>(`/admin/notifications?${params.toString()}`, {
+      method: 'GET',
+      auth: true,
+    });
+  },
+
+  async markRead(body: { ids?: string[]; all?: boolean; read?: boolean }) {
+    return apiFetch<{ success: boolean }>('/admin/notifications/mark-read', {
+      method: 'POST',
+      body,
+      auth: true,
+    });
+  },
+
+  async clear() {
+    return apiFetch<{ success: boolean }>('/admin/notifications', {
+      method: 'DELETE',
+      auth: true,
+    });
   },
 };
 

@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Mail, Lock } from 'lucide-react';
-import { authApi, setTokens, ApiError } from '@/lib/api-client';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Mail, Lock } from "lucide-react";
+import { authApi, setTokens, ApiError } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,9 +20,12 @@ export default function LoginPage() {
     try {
       const response = await authApi.login(email, password);
       setTokens(response.accessToken, response.refreshToken, response.merchant);
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "Login failed. Please try again.";
       setError(message);
     } finally {
       setLoading(false);
@@ -33,20 +36,27 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-between bg-background text-foreground transition-colors duration-200">
       {/* Header bar */}
       <header className="px-6 py-4 flex items-center justify-between border-b border-card-border">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-85 transition-opacity">
+        <Link
+          href="/"
+          className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+        >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted">Back Home</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+            Back Home
+          </span>
         </Link>
       </header>
 
       {/* Main card section */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md bg-card-bg border border-card-border rounded-xl shadow-lg p-8">
-          
           {/* Logo element */}
           <div className="flex flex-col items-center gap-2 mb-8 text-center">
             <div className="flex items-center gap-2">
-              <span className="text-3xl font-extrabold select-none" style={{ color: "#2DCA73" }}>
+              <span
+                className="text-3xl font-extrabold select-none"
+                style={{ color: "#2DCA73" }}
+              >
                 ∞
               </span>
               <span className="font-cursive text-3xl font-bold tracking-wide">
@@ -89,7 +99,10 @@ export default function LoginPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-muted">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-xs font-semibold text-accent hover:underline">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-accent hover:underline"
+                >
                   Forgot Password?
                 </Link>
               </div>
@@ -124,8 +137,11 @@ export default function LoginPage() {
           {/* Setup callout */}
           <div className="mt-8 text-center text-xs text-muted border-t border-card-border pt-6">
             New to Lemni?{" "}
-            <Link href="/signup" className="font-semibold text-accent hover:underline">
-              Create an account
+            <Link
+              href="/signup"
+              className="font-semibold text-accent hover:underline"
+            >
+              Sign Up
             </Link>
           </div>
         </div>

@@ -1,20 +1,36 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Eye, Sparkles, Layers, Wand2, Check, TrendingUp, SlidersHorizontal } from 'lucide-react';
-import { billingApi, aiApi, ApiError, PlanRow } from '@/lib/api-client';
+import React, { useEffect, useState } from "react";
+import {
+  Plus,
+  Trash2,
+  Eye,
+  Sparkles,
+  Layers,
+  Wand2,
+  Check,
+  TrendingUp,
+  SlidersHorizontal,
+} from "lucide-react";
+import { billingApi, aiApi, ApiError, PlanRow } from "@/lib/api-client";
 
 export default function PlansPage() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [copiedPlanId, setCopiedPlanId] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   // Form states
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [amount, setAmount] = useState(12500);
-  const [billingModel, setBillingModel] = useState<'recurring' | 'one_time' | 'custom_input'>('recurring');
-  const [interval, setInterval] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [billingModel, setBillingModel] = useState<
+    "recurring" | "one_time" | "custom_input"
+  >("recurring");
+  const [interval, setInterval] = useState<"weekly" | "monthly" | "yearly">(
+    "monthly",
+  );
   const [trialDays, setTrialDays] = useState(0);
   const [trialRequireCard, setTrialRequireCard] = useState(false);
   const [gracePeriodDays, setGracePeriodDays] = useState(0);
@@ -22,8 +38,8 @@ export default function PlansPage() {
   const [formLoading, setFormLoading] = useState(false);
 
   // AI Plan Builder
-  const [aiMode, setAiMode] = useState<'single' | 'ladder'>('single');
-  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiMode, setAiMode] = useState<"single" | "ladder">("single");
+  const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiWarnings, setAiWarnings] = useState<string[]>([]);
@@ -33,8 +49,8 @@ export default function PlansPage() {
     name: string;
     tagline: string;
     amount: number;
-    billingModel: 'recurring' | 'one_time';
-    interval: 'weekly' | 'monthly' | 'yearly';
+    billingModel: "recurring" | "one_time";
+    interval: "weekly" | "monthly" | "yearly";
     trialDays: number;
     trialRequireCard: boolean;
     gracePeriodDays: number;
@@ -51,7 +67,8 @@ export default function PlansPage() {
       const data = await billingApi.listPlans();
       setPlans(data);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to load plans';
+      const message =
+        err instanceof ApiError ? err.message : "Failed to load plans";
       setError(message);
     } finally {
       setLoading(false);
@@ -72,11 +89,11 @@ export default function PlansPage() {
       const payload: {
         name: string;
         amount: number;
-        billingModel: 'recurring' | 'one_time' | 'custom_input';
+        billingModel: "recurring" | "one_time" | "custom_input";
         trialDays: number;
         trialRequireCard: boolean;
         gracePeriodDays: number;
-        interval?: 'weekly' | 'monthly' | 'yearly';
+        interval?: "weekly" | "monthly" | "yearly";
       } = {
         name,
         amount,
@@ -86,20 +103,21 @@ export default function PlansPage() {
         gracePeriodDays,
       };
 
-      if (billingModel === 'recurring') {
+      if (billingModel === "recurring") {
         payload.interval = interval;
       }
 
       if (editingId) {
         const updated = await billingApi.updatePlan(editingId, payload);
-        setPlans(plans.map(p => p.id === editingId ? updated : p));
+        setPlans(plans.map((p) => (p.id === editingId ? updated : p)));
       } else {
         const newPlan = await billingApi.createPlan(payload);
         setPlans([...plans, newPlan]);
       }
       resetForm();
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to save plan';
+      const message =
+        err instanceof ApiError ? err.message : "Failed to save plan";
       setError(message);
     } finally {
       setFormLoading(false);
@@ -107,18 +125,19 @@ export default function PlansPage() {
   };
 
   const handleDeletePlan = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this plan?')) return;
+    if (!window.confirm("Are you sure you want to delete this plan?")) return;
 
     try {
       setDeleteError(null);
       await billingApi.deletePlan(id);
-      setPlans(plans.filter(p => p.id !== id));
+      setPlans(plans.filter((p) => p.id !== id));
       if (editingId === id) resetForm();
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
-        setDeleteError('Cannot delete plan with active subscriptions');
+        setDeleteError("Cannot delete plan with active subscriptions");
       } else {
-        const message = err instanceof ApiError ? err.message : 'Failed to delete plan';
+        const message =
+          err instanceof ApiError ? err.message : "Failed to delete plan";
         setDeleteError(message);
       }
     }
@@ -129,7 +148,7 @@ export default function PlansPage() {
     setName(plan.name);
     setAmount(plan.amount);
     setBillingModel(plan.billingModel);
-    setInterval(plan.interval || 'monthly');
+    setInterval(plan.interval || "monthly");
     setTrialDays(plan.trialDays);
     setTrialRequireCard(plan.trialRequireCard);
     setGracePeriodDays(plan.gracePeriodDays);
@@ -138,10 +157,10 @@ export default function PlansPage() {
 
   const resetForm = () => {
     setEditingId(null);
-    setName('');
+    setName("");
     setAmount(12500);
-    setBillingModel('recurring');
-    setInterval('monthly');
+    setBillingModel("recurring");
+    setInterval("monthly");
     setTrialDays(0);
     setTrialRequireCard(false);
     setGracePeriodDays(0);
@@ -150,7 +169,7 @@ export default function PlansPage() {
   };
 
   const formatPrice = (val: number) => {
-    return `₦${val.toLocaleString('en-NG')}`;
+    return `₦${val.toLocaleString("en-NG")}`;
   };
 
   const handleGenerateWithAi = async (e: React.FormEvent) => {
@@ -172,7 +191,8 @@ export default function PlansPage() {
       setGracePeriodDays(plan.gracePeriodDays);
       setAiWarnings(warnings);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to generate plan';
+      const message =
+        err instanceof ApiError ? err.message : "Failed to generate plan";
       setAiError(message);
     } finally {
       setAiLoading(false);
@@ -184,9 +204,13 @@ export default function PlansPage() {
 
   // Normalize any recurring interval to a monthly figure so tiers are comparable.
   const estimateMonthlyRevenue = (tier: Tier) => {
-    if (tier.billingModel !== 'recurring') return null;
+    if (tier.billingModel !== "recurring") return null;
     const perMonth =
-      tier.interval === 'weekly' ? tier.amount * 4.345 : tier.interval === 'yearly' ? tier.amount / 12 : tier.amount;
+      tier.interval === "weekly"
+        ? tier.amount * 4.345
+        : tier.interval === "yearly"
+          ? tier.amount / 12
+          : tier.amount;
     return Math.round(perMonth * MRR_SAMPLE_SUBS);
   };
 
@@ -204,7 +228,10 @@ export default function PlansPage() {
       setLadderStrategy(strategy);
       setLadderTiers(tiers);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to generate pricing ladder';
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "Failed to generate pricing ladder";
       setAiError(message);
     } finally {
       setAiLoading(false);
@@ -222,7 +249,8 @@ export default function PlansPage() {
     setTrialRequireCard(tier.trialRequireCard);
     setGracePeriodDays(tier.gracePeriodDays);
     setAiWarnings([]);
-    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleCreateAllTiers = async () => {
@@ -242,7 +270,9 @@ export default function PlansPage() {
           trialDays: tier.trialDays,
           trialRequireCard: tier.trialRequireCard,
           gracePeriodDays: tier.gracePeriodDays,
-          ...(tier.billingModel === 'recurring' ? { interval: tier.interval } : {}),
+          ...(tier.billingModel === "recurring"
+            ? { interval: tier.interval }
+            : {}),
         };
         created.push(await billingApi.createPlan(payload));
       } catch {
@@ -256,17 +286,146 @@ export default function PlansPage() {
       setLadderTiers([]);
       setLadderStrategy(null);
     } else if (created.length > 0) {
-      setLadderCreated(`Created ${created.length} of ${ladderTiers.length} tiers — ${failures} failed.`);
+      setLadderCreated(
+        `Created ${created.length} of ${ladderTiers.length} tiers — ${failures} failed.`,
+      );
     } else {
-      setError('Failed to create the generated tiers. Please try again.');
+      setError("Failed to create the generated tiers. Please try again.");
+    }
+  };
+
+  const handleGenerateWithAi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+
+    setAiLoading(true);
+    setAiError(null);
+    setAiWarnings([]);
+    try {
+      const { plan, warnings } = await aiApi.generatePlan(aiPrompt);
+      setEditingId(null);
+      setName(plan.name);
+      setAmount(plan.amount);
+      setBillingModel(plan.billingModel);
+      setInterval(plan.interval);
+      setTrialDays(plan.trialDays);
+      setTrialRequireCard(plan.trialRequireCard);
+      setGracePeriodDays(plan.gracePeriodDays);
+      setAiWarnings(warnings);
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : "Failed to generate plan";
+      setAiError(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Assumed subscriber count for the illustrative MRR estimate on each tier card.
+  const MRR_SAMPLE_SUBS = 100;
+
+  // Normalize any recurring interval to a monthly figure so tiers are comparable.
+  const estimateMonthlyRevenue = (tier: Tier) => {
+    if (tier.billingModel !== "recurring") return null;
+    const perMonth =
+      tier.interval === "weekly"
+        ? tier.amount * 4.345
+        : tier.interval === "yearly"
+          ? tier.amount / 12
+          : tier.amount;
+    return Math.round(perMonth * MRR_SAMPLE_SUBS);
+  };
+
+  const handleGenerateLadder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+
+    setAiLoading(true);
+    setAiError(null);
+    setLadderStrategy(null);
+    setLadderTiers([]);
+    setLadderCreated(null);
+    try {
+      const { strategy, plans: tiers } = await aiApi.generateLadder(aiPrompt);
+      setLadderStrategy(strategy);
+      setLadderTiers(tiers);
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "Failed to generate pricing ladder";
+      setAiError(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Load a generated tier into the manual form for fine-tuning (tagline is display-only).
+  const loadTierIntoForm = (tier: Tier) => {
+    setEditingId(null);
+    setName(tier.name);
+    setAmount(tier.amount);
+    setBillingModel(tier.billingModel);
+    setInterval(tier.interval);
+    setTrialDays(tier.trialDays);
+    setTrialRequireCard(tier.trialRequireCard);
+    setGracePeriodDays(tier.gracePeriodDays);
+    setAiWarnings([]);
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCreateAllTiers = async () => {
+    if (ladderTiers.length === 0) return;
+    setLadderCreating(true);
+    setError(null);
+    setLadderCreated(null);
+    const created: PlanRow[] = [];
+    let failures = 0;
+    // Sequential to keep ordering deterministic and avoid hammering the backend.
+    for (const tier of ladderTiers) {
+      try {
+        const payload = {
+          name: tier.name,
+          amount: tier.amount,
+          billingModel: tier.billingModel,
+          trialDays: tier.trialDays,
+          trialRequireCard: tier.trialRequireCard,
+          gracePeriodDays: tier.gracePeriodDays,
+          ...(tier.billingModel === "recurring"
+            ? { interval: tier.interval }
+            : {}),
+        };
+        created.push(await billingApi.createPlan(payload));
+      } catch {
+        failures += 1;
+      }
+    }
+    if (created.length > 0) setPlans((prev) => [...prev, ...created]);
+    setLadderCreating(false);
+    if (failures === 0) {
+      setLadderCreated(`Created all ${created.length} tiers 🎉`);
+      setLadderTiers([]);
+      setLadderStrategy(null);
+    } else if (created.length > 0) {
+      setLadderCreated(
+        `Created ${created.length} of ${ladderTiers.length} tiers — ${failures} failed.`,
+      );
+    } else {
+      setError("Failed to create the generated tiers. Please try again.");
     }
   };
 
   return (
     <div className="space-y-8 select-none">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">Billing Plans</h2>
-        <p className="text-sm text-muted">Create and manage subscription plans integrated with your checkout flow.</p>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">
+          Billing Plans
+        </h2>
+        <p className="text-sm text-muted">
+          Create and manage subscription plans integrated with your checkout
+          flow.
+        </p>
       </div>
 
       <div className="max-w-4xl space-y-8">
@@ -279,9 +438,9 @@ export default function PlansPage() {
                 AI Plan Builder
               </h3>
               <p className="text-xs text-muted mt-1">
-                {aiMode === 'single'
-                  ? 'Describe a plan in plain English — AI fills the form below for you to review.'
-                  : 'Describe your business — AI designs a full pricing ladder you can launch in one click.'}
+                {aiMode === "single"
+                  ? "Describe a plan in plain English — AI fills the form below for you to review."
+                  : "Describe your business — AI designs a full pricing ladder you can launch in one click."}
               </p>
             </div>
 
@@ -289,18 +448,28 @@ export default function PlansPage() {
             <div className="flex bg-muted-bg border border-card-border rounded-lg p-0.5 text-xs font-semibold shrink-0">
               <button
                 type="button"
-                onClick={() => { setAiMode('single'); setAiError(null); }}
+                onClick={() => {
+                  setAiMode("single");
+                  setAiError(null);
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-                  aiMode === 'single' ? 'bg-card-bg text-foreground shadow-sm' : 'text-muted hover:text-foreground'
+                  aiMode === "single"
+                    ? "bg-card-bg text-foreground shadow-sm"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 <Wand2 className="w-3.5 h-3.5" /> Single
               </button>
               <button
                 type="button"
-                onClick={() => { setAiMode('ladder'); setAiError(null); }}
+                onClick={() => {
+                  setAiMode("ladder");
+                  setAiError(null);
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-                  aiMode === 'ladder' ? 'bg-card-bg text-foreground shadow-sm' : 'text-muted hover:text-foreground'
+                  aiMode === "ladder"
+                    ? "bg-card-bg text-foreground shadow-sm"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" /> Pricing Ladder
@@ -314,15 +483,20 @@ export default function PlansPage() {
             </div>
           )}
 
-          <form onSubmit={aiMode === 'single' ? handleGenerateWithAi : handleGenerateLadder} className="flex flex-col sm:flex-row gap-3">
+          <form
+            onSubmit={
+              aiMode === "single" ? handleGenerateWithAi : handleGenerateLadder
+            }
+            className="flex flex-col sm:flex-row gap-3"
+          >
             <input
               type="text"
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               placeholder={
-                aiMode === 'single'
-                  ? 'e.g. Bill users ₦5,000 monthly, with a 14-day free trial, no card required upfront'
-                  : 'e.g. I run a gym and want three membership tiers'
+                aiMode === "single"
+                  ? "e.g. Bill users ₦5,000 monthly, with a 14-day free trial, no card required upfront"
+                  : "e.g. I run a gym and want three membership tiers"
               }
               className="flex-1 px-3 py-2 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
             />
@@ -333,19 +507,31 @@ export default function PlansPage() {
             >
               {aiLoading ? (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : aiMode === 'single' ? (
-                <><Sparkles className="w-4 h-4" /> Generate</>
+              ) : aiMode === "single" ? (
+                <>
+                  <Sparkles className="w-4 h-4" /> Generate
+                </>
               ) : (
-                <><Layers className="w-4 h-4" /> Design Ladder</>
+                <>
+                  <Layers className="w-4 h-4" /> Design Ladder
+                </>
               )}
             </button>
           </form>
 
           {/* Example prompt chips */}
           <div className="flex flex-wrap gap-2">
-            {(aiMode === 'single'
-              ? ['₦12,500/mo gym membership, 7-day trial', 'One-time ₦25,000 course fee', 'Yearly ₦120,000 pro plan']
-              : ['I run a gym, three membership tiers', 'SaaS tool: free, pro, and business tiers', 'Streaming service, basic to premium']
+            {(aiMode === "single"
+              ? [
+                  "₦12,500/mo gym membership, 7-day trial",
+                  "One-time ₦25,000 course fee",
+                  "Yearly ₦120,000 pro plan",
+                ]
+              : [
+                  "I run a gym, three membership tiers",
+                  "SaaS tool: free, pro, and business tiers",
+                  "Streaming service, basic to premium",
+                ]
             ).map((chip) => (
               <button
                 key={chip}
@@ -359,7 +545,7 @@ export default function PlansPage() {
           </div>
 
           {/* Single-mode: defaulted-field warnings */}
-          {aiMode === 'single' && aiWarnings.length > 0 && (
+          {aiMode === "single" && aiWarnings.length > 0 && (
             <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
                 Defaulted fields — please review
@@ -373,36 +559,41 @@ export default function PlansPage() {
           )}
 
           {/* Ladder success banner */}
-          {aiMode === 'ladder' && ladderCreated && (
+          {aiMode === "ladder" && ladderCreated && (
             <div className="p-3 bg-success-bg border border-success-border rounded-lg flex items-center gap-2">
               <Check className="w-4 h-4 text-success" />
-              <p className="text-xs font-semibold text-success">{ladderCreated}</p>
+              <p className="text-xs font-semibold text-success">
+                {ladderCreated}
+              </p>
             </div>
           )}
 
           {/* Ladder results */}
-          {aiMode === 'ladder' && ladderTiers.length > 0 && (
+          {aiMode === "ladder" && ladderTiers.length > 0 && (
             <div className="space-y-4 pt-2">
               {ladderStrategy && (
                 <div className="p-3 bg-background border border-card-border rounded-lg">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
                     <Sparkles className="w-3 h-3" /> Pricing Strategy
                   </p>
-                  <p className="text-xs text-muted leading-relaxed">{ladderStrategy}</p>
+                  <p className="text-xs text-muted leading-relaxed">
+                    {ladderStrategy}
+                  </p>
                 </div>
               )}
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {ladderTiers.map((tier, idx) => {
                   const mrr = estimateMonthlyRevenue(tier);
-                  const highlight = idx === Math.floor((ladderTiers.length - 1) / 2);
+                  const highlight =
+                    idx === Math.floor((ladderTiers.length - 1) / 2);
                   return (
                     <div
                       key={`${tier.name}-${idx}`}
                       className={`relative rounded-xl border p-4 flex flex-col gap-3 transition-all ${
                         highlight
-                          ? 'border-[#2DCA73]/50 bg-[#2DCA73]/5 shadow-[0_4px_20px_-4px_rgba(45,202,115,0.2)]'
-                          : 'border-card-border bg-background'
+                          ? "border-[#2DCA73]/50 bg-[#2DCA73]/5 shadow-[0_4px_20px_-4px_rgba(45,202,115,0.2)]"
+                          : "border-card-border bg-background"
                       }`}
                     >
                       {highlight && (
@@ -411,21 +602,37 @@ export default function PlansPage() {
                         </span>
                       )}
                       <div>
-                        <p className="text-sm font-bold text-foreground">{tier.name}</p>
-                        <p className="text-[11px] text-muted leading-snug mt-0.5">{tier.tagline}</p>
+                        <p className="text-sm font-bold text-foreground">
+                          {tier.name}
+                        </p>
+                        <p className="text-[11px] text-muted leading-snug mt-0.5">
+                          {tier.tagline}
+                        </p>
                       </div>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-extrabold text-foreground">{formatPrice(tier.amount)}</span>
+                        <span className="text-xl font-extrabold text-foreground">
+                          {formatPrice(tier.amount)}
+                        </span>
                         <span className="text-[10px] text-muted font-semibold uppercase">
-                          {tier.billingModel === 'recurring' ? `/ ${tier.interval}` : 'one-time'}
+                          {tier.billingModel === "recurring"
+                            ? `/ ${tier.interval}`
+                            : "one-time"}
                         </span>
                       </div>
                       <div className="space-y-1 text-[11px] text-muted">
-                        {tier.trialDays > 0 && <p>✓ {tier.trialDays}-day free trial{tier.trialRequireCard ? ' (card required)' : ''}</p>}
-                        {tier.gracePeriodDays > 0 && <p>✓ {tier.gracePeriodDays}-day grace period</p>}
+                        {tier.trialDays > 0 && (
+                          <p>
+                            ✓ {tier.trialDays}-day free trial
+                            {tier.trialRequireCard ? " (card required)" : ""}
+                          </p>
+                        )}
+                        {tier.gracePeriodDays > 0 && (
+                          <p>✓ {tier.gracePeriodDays}-day grace period</p>
+                        )}
                         {mrr !== null && (
                           <p className="flex items-center gap-1 text-[#2DCA73] font-semibold pt-1">
-                            <TrendingUp className="w-3 h-3" /> ≈ {formatPrice(mrr)}/mo at {MRR_SAMPLE_SUBS} subs
+                            <TrendingUp className="w-3 h-3" /> ≈{" "}
+                            {formatPrice(mrr)}/mo at {MRR_SAMPLE_SUBS} subs
                           </p>
                         )}
                       </div>
@@ -434,7 +641,8 @@ export default function PlansPage() {
                         onClick={() => loadTierIntoForm(tier)}
                         className="mt-auto text-[11px] font-semibold text-muted hover:text-foreground flex items-center gap-1.5 self-start cursor-pointer"
                       >
-                        <SlidersHorizontal className="w-3 h-3" /> Fine-tune in form
+                        <SlidersHorizontal className="w-3 h-3" /> Fine-tune in
+                        form
                       </button>
                     </div>
                   );
@@ -451,12 +659,18 @@ export default function PlansPage() {
                   {ladderCreating ? (
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <><Plus className="w-4 h-4" /> Create all {ladderTiers.length} tiers</>
+                    <>
+                      <Plus className="w-4 h-4" /> Create all{" "}
+                      {ladderTiers.length} tiers
+                    </>
                   )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setLadderTiers([]); setLadderStrategy(null); }}
+                  onClick={() => {
+                    setLadderTiers([]);
+                    setLadderStrategy(null);
+                  }}
                   className="px-4 py-2 text-sm font-semibold border border-card-border hover:bg-muted-bg rounded-lg transition-colors cursor-pointer"
                 >
                   Discard
@@ -469,7 +683,9 @@ export default function PlansPage() {
         {/* Plan Form */}
         <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-bold uppercase tracking-wider text-foreground mb-6">
-            {editingId ? 'Edit Subscription Plan' : 'Create New Subscription Plan'}
+            {editingId
+              ? "Edit Subscription Plan"
+              : "Create New Subscription Plan"}
           </h3>
 
           {error && (
@@ -514,7 +730,14 @@ export default function PlansPage() {
                 </label>
                 <select
                   value={billingModel}
-                  onChange={(e) => setBillingModel(e.target.value as 'recurring' | 'one_time' | 'custom_input')}
+                  onChange={(e) =>
+                    setBillingModel(
+                      e.target.value as
+                        | "recurring"
+                        | "one_time"
+                        | "custom_input",
+                    )
+                  }
                   className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
                 >
                   <option value="recurring">Recurring</option>
@@ -523,14 +746,18 @@ export default function PlansPage() {
                 </select>
               </div>
 
-              {billingModel === 'recurring' && (
+              {billingModel === "recurring" && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
                     Interval
                   </label>
                   <select
                     value={interval}
-                    onChange={(e) => setInterval(e.target.value as 'weekly' | 'monthly' | 'yearly')}
+                    onChange={(e) =>
+                      setInterval(
+                        e.target.value as "weekly" | "monthly" | "yearly",
+                      )
+                    }
                     className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
                   >
                     <option value="weekly">Weekly</option>
@@ -573,10 +800,13 @@ export default function PlansPage() {
                 id="trialCard"
                 checked={trialRequireCard}
                 onChange={(e) => setTrialRequireCard(e.target.checked)}
-                style={{ accentColor: 'var(--accent)' }}
+                style={{ accentColor: "var(--accent)" }}
                 className="rounded"
               />
-              <label htmlFor="trialCard" className="text-xs font-semibold text-muted cursor-pointer">
+              <label
+                htmlFor="trialCard"
+                className="text-xs font-semibold text-muted cursor-pointer"
+              >
                 Require card for trial
               </label>
             </div>
@@ -590,7 +820,7 @@ export default function PlansPage() {
                 {formLoading ? (
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : editingId ? (
-                  'Update Plan'
+                  "Update Plan"
                 ) : (
                   <>
                     <Plus className="w-4 h-4" /> Create Plan
@@ -618,7 +848,15 @@ export default function PlansPage() {
 
           {deleteError && (
             <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
-              <p className="text-xs font-semibold text-rose-500">{deleteError}</p>
+              <p className="text-xs font-semibold text-rose-500">
+                {deleteError}
+              </p>
+            </div>
+          )}
+
+          {linkError && (
+            <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+              <p className="text-xs font-semibold text-rose-500">{linkError}</p>
             </div>
           )}
 
@@ -627,22 +865,44 @@ export default function PlansPage() {
               <span className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
             </div>
           ) : plans.length === 0 ? (
-            <p className="text-xs text-muted text-center py-8">No plans yet. Create one above!</p>
+            <p className="text-xs text-muted text-center py-8">
+              No plans yet. Create one above!
+            </p>
           ) : (
             <div className="space-y-3">
               {plans.map((plan) => (
-                <div key={plan.id} className="flex items-center justify-between p-4 border border-card-border rounded-lg hover:bg-muted-bg/30 transition-colors">
+                <div
+                  key={plan.id}
+                  className="flex items-center justify-between p-4 border border-card-border rounded-lg hover:bg-muted-bg/30 transition-colors"
+                >
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">{plan.name}</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {plan.name}
+                    </p>
                     <p className="text-xs text-muted">
-                      {formatPrice(plan.amount)} • {plan.billingModel === 'recurring' ? plan.interval : 'One-time'} • Trial: {plan.trialDays}d
+                      {formatPrice(plan.amount)} •{" "}
+                      {plan.billingModel === "recurring"
+                        ? plan.interval
+                        : "One-time"}{" "}
+                      • Trial: {plan.trialDays}d
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => window.open(`/preview/${plan.id}`, '_blank')}
+                      onClick={() => handleCopyLink(plan.id)}
                       className="p-2 text-muted hover:text-foreground hover:bg-muted-bg rounded-lg transition-colors"
-                      title="Preview"
+                      title="Copy checkout link"
+                    >
+                      {copiedPlanId === plan.id ? (
+                        <Check className="w-4 h-4 text-success" />
+                      ) : (
+                        <Link2 className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleOpenLink(plan.id)}
+                      className="p-2 text-muted hover:text-foreground hover:bg-muted-bg rounded-lg transition-colors"
+                      title="Open checkout link"
                     >
                       <Eye className="w-4 h-4" />
                     </button>

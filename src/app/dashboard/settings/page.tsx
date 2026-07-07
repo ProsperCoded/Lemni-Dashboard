@@ -147,141 +147,6 @@ export default function SettingsPage() {
 
       <div className="space-y-8 max-w-4xl">
 
-        {/* API Keys Manager Section */}
-        <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-2 border-b border-card-border pb-4">
-            <Key className="w-5 h-5 text-accent" />
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">API Credentials</h3>
-              <p className="text-xs text-muted">API access tokens for Lemni Billing Engine</p>
-            </div>
-          </div>
-
-          {apiKeysError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
-              <p className="text-xs font-semibold text-rose-500">{apiKeysError}</p>
-            </div>
-          )}
-
-          {rawKeyReveal && (
-            <div className="p-4 bg-success-bg border border-success-border rounded-lg space-y-2">
-              <p className="text-xs font-bold text-success">This key will not be shown again. Copy it now.</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={rawKeyReveal}
-                  className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-xs font-mono focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopyKey}
-                  className="px-3 border border-card-border hover:bg-muted-bg rounded-lg transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer bg-card-bg"
-                >
-                  {copiedKey ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                  {copiedKey ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => setRawKeyReveal(null)}
-                className="text-xs font-semibold text-muted hover:text-foreground"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-
-          {apiKeysLoading ? (
-            <div className="flex justify-center py-4">
-              <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {apiKeys.map((key) => (
-                <div key={key.id} className="flex items-center justify-between p-3 border border-card-border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                      key.environment === 'live'
-                        ? 'bg-success-bg border-success-border text-success'
-                        : 'bg-muted-bg border-muted-border text-muted'
-                    }`}>
-                      {key.environment}
-                    </span>
-                    <span className="text-xs text-muted font-mono">{key.id}</span>
-                    <span className="text-[10px] text-muted">
-                      {key.createdAt ? new Date(key.createdAt).toLocaleDateString() : ''}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRevokeKey(key.id)}
-                    className="px-2 py-1 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Revoke
-                  </button>
-                </div>
-              ))}
-
-              {apiKeys.length === 0 && (
-                <p className="text-xs text-muted text-center py-4">No API keys generated yet.</p>
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center gap-3 pt-2 border-t border-card-border">
-            <select
-              value={newKeyEnv}
-              onChange={(e) => setNewKeyEnv(e.target.value as 'test' | 'live')}
-              className="px-3 py-2 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
-            >
-              <option value="test">Test</option>
-              <option value="live">Live</option>
-            </select>
-            <button
-              type="button"
-              onClick={handleGenerateKey}
-              disabled={generatingKey}
-              className="px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 cursor-pointer"
-            >
-              {generatingKey ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" /> Generate New Key
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Webhooks Section - Disabled Placeholder */}
-        <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-2 border-b border-card-border pb-4">
-            <Globe className="w-5 h-5 text-accent" />
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Webhook Recipient</h3>
-              <p className="text-xs text-muted">Lemni Engine events listener configuration</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
-              Webhook Endpoint URL
-            </label>
-            <input
-              type="url"
-              disabled
-              placeholder="https://example.com/api/webhooks/lemni"
-              className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-sm opacity-50 cursor-not-allowed"
-            />
-            <span className="text-[10px] text-muted font-medium mt-1.5 block">
-              Coming soon — self-service webhook configuration is not yet available.
-            </span>
-          </div>
-        </div>
-
         {/* Telegram Section */}
         <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
           <div className="flex items-center gap-2 border-b border-card-border pb-4">
@@ -355,6 +220,151 @@ export default function SettingsPage() {
               </p>
             </div>
           )}
+        </div>
+
+        {/* API Keys Manager Section */}
+        <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
+          <div className="flex items-center gap-2 border-b border-card-border pb-4">
+            <Key className="w-5 h-5 text-accent" />
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">API Credentials</h3>
+              <p className="text-xs text-muted">API access tokens for Lemni Billing Engine</p>
+            </div>
+          </div>
+
+          {apiKeysError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+              <p className="text-xs font-semibold text-rose-500">{apiKeysError}</p>
+            </div>
+          )}
+
+          {rawKeyReveal && (
+            <div className="p-4 bg-success-bg border border-success-border rounded-lg space-y-2">
+              <p className="text-xs font-bold text-success">This key will not be shown again. Copy it now.</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={rawKeyReveal}
+                  className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-xs font-mono focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyKey}
+                  className="px-3 border border-card-border hover:bg-muted-bg rounded-lg transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer bg-card-bg"
+                >
+                  {copiedKey ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  {copiedKey ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRawKeyReveal(null)}
+                className="text-xs font-semibold text-muted hover:text-foreground"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {apiKeysLoading ? (
+            <div className="flex justify-center py-4">
+              <span className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {apiKeys.map((key) => (
+                <div
+                  key={key.id}
+                  className={`flex items-center justify-between p-3 border border-card-border rounded-lg ${!key.isActive ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                      key.environment === 'live'
+                        ? 'bg-success-bg border-success-border text-success'
+                        : 'bg-muted-bg border-muted-border text-muted'
+                    }`}>
+                      {key.environment}
+                    </span>
+                    {!key.isActive && (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-500/10 border-rose-500/20 text-rose-500">
+                        revoked
+                      </span>
+                    )}
+                    <span className="text-xs text-muted font-mono">{key.id}</span>
+                    <span className="text-[10px] text-muted">
+                      {key.createdAt ? new Date(key.createdAt).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                  {key.isActive && (
+                    <button
+                      type="button"
+                      onClick={() => handleRevokeKey(key.id)}
+                      className="px-2 py-1 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/10 text-rose-500 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Revoke
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {apiKeys.length === 0 && (
+                <p className="text-xs text-muted text-center py-4">No API keys generated yet.</p>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 pt-2 border-t border-card-border">
+            <select
+              value={newKeyEnv}
+              onChange={(e) => setNewKeyEnv(e.target.value as 'test' | 'live')}
+              className="px-3 py-2 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
+            >
+              <option value="test">Test</option>
+              <option value="live">Live</option>
+            </select>
+            <button
+              type="button"
+              onClick={handleGenerateKey}
+              disabled={generatingKey}
+              className="px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 cursor-pointer"
+            >
+              {generatingKey ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" /> Generate New Key
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Webhooks Section - Disabled Placeholder */}
+        <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm space-y-6">
+          <div className="flex items-center gap-2 border-b border-card-border pb-4">
+            <Globe className="w-5 h-5 text-accent" />
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Webhook Recipient</h3>
+              <p className="text-xs text-muted">Lemni Engine events listener configuration</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
+              Webhook Endpoint URL
+            </label>
+            <input
+              type="url"
+              disabled
+              placeholder="https://example.com/api/webhooks/lemni"
+              className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-sm opacity-50 cursor-not-allowed"
+            />
+            <span className="text-[10px] text-muted font-medium mt-1.5 block">
+              Coming soon — self-service webhook configuration is not yet available.
+            </span>
+          </div>
         </div>
 
         {/* WhatsApp & Grace Period - Disabled Placeholders */}
