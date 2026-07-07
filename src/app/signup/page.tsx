@@ -3,11 +3,12 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Lock } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
 import { authApi, setTokens, ApiError } from '@/lib/api-client';
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,14 +16,21 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const response = await authApi.login(email, password);
-      setTokens(response.accessToken, response.refreshToken, response.merchant);
+      await authApi.signup(email, password, name);
+      // Auto-login straight after signup so the merchant lands in the dashboard.
+      const session = await authApi.login(email, password);
+      setTokens(session.accessToken, session.refreshToken, session.merchant);
       router.push('/dashboard');
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
+      const message = err instanceof ApiError ? err.message : 'Signup failed. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
@@ -42,7 +50,7 @@ export default function LoginPage() {
       {/* Main card section */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md bg-card-bg border border-card-border rounded-xl shadow-lg p-8">
-          
+
           {/* Logo element */}
           <div className="flex flex-col items-center gap-2 mb-8 text-center">
             <div className="flex items-center gap-2">
@@ -54,7 +62,7 @@ export default function LoginPage() {
               </span>
             </div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted mt-2">
-              Merchant Login
+              Create Merchant Account
             </p>
           </div>
 
@@ -65,6 +73,25 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
+                Business Name
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-muted">
+                  <User className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. BananaFitness"
+                  className="w-full pl-10 pr-4 py-2.5 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
                 Merchant Email
@@ -85,14 +112,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-muted">
-                  Password
-                </label>
-                <Link href="/forgot-password" className="text-xs font-semibold text-accent hover:underline">
-                  Forgot Password?
-                </Link>
-              </div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">
+                Password
+              </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-muted">
                   <Lock className="w-4 h-4" />
@@ -106,6 +128,7 @@ export default function LoginPage() {
                   className="w-full pl-10 pr-4 py-2.5 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
                 />
               </div>
+              <p className="text-[10px] text-muted mt-1.5">At least 8 characters.</p>
             </div>
 
             <button
@@ -116,16 +139,16 @@ export default function LoginPage() {
               {loading ? (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                "Continue"
+                "Create Account"
               )}
             </button>
           </form>
 
-          {/* Setup callout */}
+          {/* Login callout */}
           <div className="mt-8 text-center text-xs text-muted border-t border-card-border pt-6">
-            New to Lemni?{" "}
-            <Link href="/signup" className="font-semibold text-accent hover:underline">
-              Create an account
+            Already have an account?{" "}
+            <Link href="/login" className="font-semibold text-accent hover:underline">
+              Sign In
             </Link>
           </div>
         </div>

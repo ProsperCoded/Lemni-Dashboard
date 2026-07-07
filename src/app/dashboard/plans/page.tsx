@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Eye } from 'lucide-react';
-import { billingApi, ApiError, PlanRow } from '@/lib/api-client';
+import { Plus, Trash2, Eye, Sparkles, Layers, Wand2, Check, TrendingUp, SlidersHorizontal } from 'lucide-react';
+import { billingApi, aiApi, ApiError, PlanRow } from '@/lib/api-client';
 
 export default function PlansPage() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
@@ -20,6 +20,29 @@ export default function PlansPage() {
   const [gracePeriodDays, setGracePeriodDays] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+
+  // AI Plan Builder
+  const [aiMode, setAiMode] = useState<'single' | 'ladder'>('single');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiWarnings, setAiWarnings] = useState<string[]>([]);
+
+  // AI Pricing Strategist (ladder mode)
+  type Tier = {
+    name: string;
+    tagline: string;
+    amount: number;
+    billingModel: 'recurring' | 'one_time';
+    interval: 'weekly' | 'monthly' | 'yearly';
+    trialDays: number;
+    trialRequireCard: boolean;
+    gracePeriodDays: number;
+  };
+  const [ladderStrategy, setLadderStrategy] = useState<string | null>(null);
+  const [ladderTiers, setLadderTiers] = useState<Tier[]>([]);
+  const [ladderCreating, setLadderCreating] = useState(false);
+  const [ladderCreated, setLadderCreated] = useState<string | null>(null);
 
   const loadPlans = async () => {
     try {
@@ -110,6 +133,7 @@ export default function PlansPage() {
     setTrialDays(plan.trialDays);
     setTrialRequireCard(plan.trialRequireCard);
     setGracePeriodDays(plan.gracePeriodDays);
+    setAiWarnings([]);
   };
 
   const resetForm = () => {
@@ -122,10 +146,120 @@ export default function PlansPage() {
     setTrialRequireCard(false);
     setGracePeriodDays(0);
     setError(null);
+    setAiWarnings([]);
   };
 
   const formatPrice = (val: number) => {
     return `₦${val.toLocaleString('en-NG')}`;
+  };
+
+  const handleGenerateWithAi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+
+    setAiLoading(true);
+    setAiError(null);
+    setAiWarnings([]);
+    try {
+      const { plan, warnings } = await aiApi.generatePlan(aiPrompt);
+      setEditingId(null);
+      setName(plan.name);
+      setAmount(plan.amount);
+      setBillingModel(plan.billingModel);
+      setInterval(plan.interval);
+      setTrialDays(plan.trialDays);
+      setTrialRequireCard(plan.trialRequireCard);
+      setGracePeriodDays(plan.gracePeriodDays);
+      setAiWarnings(warnings);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to generate plan';
+      setAiError(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Assumed subscriber count for the illustrative MRR estimate on each tier card.
+  const MRR_SAMPLE_SUBS = 100;
+
+  // Normalize any recurring interval to a monthly figure so tiers are comparable.
+  const estimateMonthlyRevenue = (tier: Tier) => {
+    if (tier.billingModel !== 'recurring') return null;
+    const perMonth =
+      tier.interval === 'weekly' ? tier.amount * 4.345 : tier.interval === 'yearly' ? tier.amount / 12 : tier.amount;
+    return Math.round(perMonth * MRR_SAMPLE_SUBS);
+  };
+
+  const handleGenerateLadder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+
+    setAiLoading(true);
+    setAiError(null);
+    setLadderStrategy(null);
+    setLadderTiers([]);
+    setLadderCreated(null);
+    try {
+      const { strategy, plans: tiers } = await aiApi.generateLadder(aiPrompt);
+      setLadderStrategy(strategy);
+      setLadderTiers(tiers);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to generate pricing ladder';
+      setAiError(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Load a generated tier into the manual form for fine-tuning (tagline is display-only).
+  const loadTierIntoForm = (tier: Tier) => {
+    setEditingId(null);
+    setName(tier.name);
+    setAmount(tier.amount);
+    setBillingModel(tier.billingModel);
+    setInterval(tier.interval);
+    setTrialDays(tier.trialDays);
+    setTrialRequireCard(tier.trialRequireCard);
+    setGracePeriodDays(tier.gracePeriodDays);
+    setAiWarnings([]);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCreateAllTiers = async () => {
+    if (ladderTiers.length === 0) return;
+    setLadderCreating(true);
+    setError(null);
+    setLadderCreated(null);
+    const created: PlanRow[] = [];
+    let failures = 0;
+    // Sequential to keep ordering deterministic and avoid hammering the backend.
+    for (const tier of ladderTiers) {
+      try {
+        const payload = {
+          name: tier.name,
+          amount: tier.amount,
+          billingModel: tier.billingModel,
+          trialDays: tier.trialDays,
+          trialRequireCard: tier.trialRequireCard,
+          gracePeriodDays: tier.gracePeriodDays,
+          ...(tier.billingModel === 'recurring' ? { interval: tier.interval } : {}),
+        };
+        created.push(await billingApi.createPlan(payload));
+      } catch {
+        failures += 1;
+      }
+    }
+    if (created.length > 0) setPlans((prev) => [...prev, ...created]);
+    setLadderCreating(false);
+    if (failures === 0) {
+      setLadderCreated(`Created all ${created.length} tiers 🎉`);
+      setLadderTiers([]);
+      setLadderStrategy(null);
+    } else if (created.length > 0) {
+      setLadderCreated(`Created ${created.length} of ${ladderTiers.length} tiers — ${failures} failed.`);
+    } else {
+      setError('Failed to create the generated tiers. Please try again.');
+    }
   };
 
   return (
@@ -136,6 +270,202 @@ export default function PlansPage() {
       </div>
 
       <div className="max-w-4xl space-y-8">
+        {/* AI Plan Builder */}
+        <div className="bg-gradient-to-br from-[#2DCA73]/5 to-transparent border border-card-border rounded-xl p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-accent" />
+                AI Plan Builder
+              </h3>
+              <p className="text-xs text-muted mt-1">
+                {aiMode === 'single'
+                  ? 'Describe a plan in plain English — AI fills the form below for you to review.'
+                  : 'Describe your business — AI designs a full pricing ladder you can launch in one click.'}
+              </p>
+            </div>
+
+            {/* Mode toggle */}
+            <div className="flex bg-muted-bg border border-card-border rounded-lg p-0.5 text-xs font-semibold shrink-0">
+              <button
+                type="button"
+                onClick={() => { setAiMode('single'); setAiError(null); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  aiMode === 'single' ? 'bg-card-bg text-foreground shadow-sm' : 'text-muted hover:text-foreground'
+                }`}
+              >
+                <Wand2 className="w-3.5 h-3.5" /> Single
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAiMode('ladder'); setAiError(null); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  aiMode === 'ladder' ? 'bg-card-bg text-foreground shadow-sm' : 'text-muted hover:text-foreground'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" /> Pricing Ladder
+              </button>
+            </div>
+          </div>
+
+          {aiError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+              <p className="text-xs font-semibold text-rose-500">{aiError}</p>
+            </div>
+          )}
+
+          <form onSubmit={aiMode === 'single' ? handleGenerateWithAi : handleGenerateLadder} className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder={
+                aiMode === 'single'
+                  ? 'e.g. Bill users ₦5,000 monthly, with a 14-day free trial, no card required upfront'
+                  : 'e.g. I run a gym and want three membership tiers'
+              }
+              className="flex-1 px-3 py-2 bg-background border border-card-border rounded-lg text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={aiLoading || !aiPrompt.trim()}
+              className="px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+            >
+              {aiLoading ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : aiMode === 'single' ? (
+                <><Sparkles className="w-4 h-4" /> Generate</>
+              ) : (
+                <><Layers className="w-4 h-4" /> Design Ladder</>
+              )}
+            </button>
+          </form>
+
+          {/* Example prompt chips */}
+          <div className="flex flex-wrap gap-2">
+            {(aiMode === 'single'
+              ? ['₦12,500/mo gym membership, 7-day trial', 'One-time ₦25,000 course fee', 'Yearly ₦120,000 pro plan']
+              : ['I run a gym, three membership tiers', 'SaaS tool: free, pro, and business tiers', 'Streaming service, basic to premium']
+            ).map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setAiPrompt(chip)}
+                className="text-[11px] font-medium px-2.5 py-1 rounded-full border border-card-border text-muted hover:text-foreground hover:border-[#2DCA73]/40 hover:bg-[#2DCA73]/5 transition-colors cursor-pointer"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+
+          {/* Single-mode: defaulted-field warnings */}
+          {aiMode === 'single' && aiWarnings.length > 0 && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                Defaulted fields — please review
+              </p>
+              <ul className="text-xs text-amber-700 space-y-0.5 list-disc list-inside">
+                {aiWarnings.map((w, i) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Ladder success banner */}
+          {aiMode === 'ladder' && ladderCreated && (
+            <div className="p-3 bg-success-bg border border-success-border rounded-lg flex items-center gap-2">
+              <Check className="w-4 h-4 text-success" />
+              <p className="text-xs font-semibold text-success">{ladderCreated}</p>
+            </div>
+          )}
+
+          {/* Ladder results */}
+          {aiMode === 'ladder' && ladderTiers.length > 0 && (
+            <div className="space-y-4 pt-2">
+              {ladderStrategy && (
+                <div className="p-3 bg-background border border-card-border rounded-lg">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-accent mb-1 flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3" /> Pricing Strategy
+                  </p>
+                  <p className="text-xs text-muted leading-relaxed">{ladderStrategy}</p>
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {ladderTiers.map((tier, idx) => {
+                  const mrr = estimateMonthlyRevenue(tier);
+                  const highlight = idx === Math.floor((ladderTiers.length - 1) / 2);
+                  return (
+                    <div
+                      key={`${tier.name}-${idx}`}
+                      className={`relative rounded-xl border p-4 flex flex-col gap-3 transition-all ${
+                        highlight
+                          ? 'border-[#2DCA73]/50 bg-[#2DCA73]/5 shadow-[0_4px_20px_-4px_rgba(45,202,115,0.2)]'
+                          : 'border-card-border bg-background'
+                      }`}
+                    >
+                      {highlight && (
+                        <span className="absolute -top-2 left-4 text-[9px] font-bold uppercase tracking-wider bg-[#2DCA73] text-white px-2 py-0.5 rounded-full">
+                          Popular
+                        </span>
+                      )}
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{tier.name}</p>
+                        <p className="text-[11px] text-muted leading-snug mt-0.5">{tier.tagline}</p>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-extrabold text-foreground">{formatPrice(tier.amount)}</span>
+                        <span className="text-[10px] text-muted font-semibold uppercase">
+                          {tier.billingModel === 'recurring' ? `/ ${tier.interval}` : 'one-time'}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-[11px] text-muted">
+                        {tier.trialDays > 0 && <p>✓ {tier.trialDays}-day free trial{tier.trialRequireCard ? ' (card required)' : ''}</p>}
+                        {tier.gracePeriodDays > 0 && <p>✓ {tier.gracePeriodDays}-day grace period</p>}
+                        {mrr !== null && (
+                          <p className="flex items-center gap-1 text-[#2DCA73] font-semibold pt-1">
+                            <TrendingUp className="w-3 h-3" /> ≈ {formatPrice(mrr)}/mo at {MRR_SAMPLE_SUBS} subs
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => loadTierIntoForm(tier)}
+                        className="mt-auto text-[11px] font-semibold text-muted hover:text-foreground flex items-center gap-1.5 self-start cursor-pointer"
+                      >
+                        <SlidersHorizontal className="w-3 h-3" /> Fine-tune in form
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleCreateAllTiers}
+                  disabled={ladderCreating}
+                  className="px-4 py-2 text-sm font-bold text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 cursor-pointer"
+                >
+                  {ladderCreating ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <><Plus className="w-4 h-4" /> Create all {ladderTiers.length} tiers</>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setLadderTiers([]); setLadderStrategy(null); }}
+                  className="px-4 py-2 text-sm font-semibold border border-card-border hover:bg-muted-bg rounded-lg transition-colors cursor-pointer"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Plan Form */}
         <div className="bg-card-bg border border-card-border rounded-xl p-6 shadow-sm">
           <h3 className="text-sm font-bold uppercase tracking-wider text-foreground mb-6">

@@ -410,5 +410,68 @@ export const dlqApi = {
   },
 };
 
+// AI Plan Builder (local Next.js route, not the Lemni Engine backend)
+export const aiApi = {
+  async generatePlan(prompt: string) {
+    const token = getAccessToken();
+    const response = await fetch('/api/admin/ai/generate-plan', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token ?? ''}`,
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new ApiError(response.status, data, data?.message);
+    }
+    return data as {
+      plan: {
+        name: string;
+        amount: number;
+        billingModel: 'recurring' | 'one_time';
+        interval: 'weekly' | 'monthly' | 'yearly';
+        trialDays: number;
+        trialRequireCard: boolean;
+        gracePeriodDays: number;
+      };
+      warnings: string[];
+    };
+  },
+
+  // AI Pricing Strategist — generate a full multi-tier pricing ladder from one prompt.
+  async generateLadder(prompt: string) {
+    const token = getAccessToken();
+    const response = await fetch('/api/admin/ai/generate-plans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token ?? ''}`,
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new ApiError(response.status, data, data?.message);
+    }
+    return data as {
+      strategy: string;
+      plans: Array<{
+        name: string;
+        tagline: string;
+        amount: number;
+        billingModel: 'recurring' | 'one_time';
+        interval: 'weekly' | 'monthly' | 'yearly';
+        trialDays: number;
+        trialRequireCard: boolean;
+        gracePeriodDays: number;
+      }>;
+    };
+  },
+};
+
 // Export token utilities
 export { getAccessToken, getRefreshToken, setTokens, clearTokens };
