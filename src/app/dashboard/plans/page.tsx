@@ -11,6 +11,8 @@ import {
   Check,
   TrendingUp,
   SlidersHorizontal,
+  Link2,
+  ChevronDown,
 } from "lucide-react";
 import { billingApi, aiApi, ApiError, PlanRow } from "@/lib/api-client";
 
@@ -38,6 +40,7 @@ export default function PlansPage() {
   const [formLoading, setFormLoading] = useState(false);
 
   // AI Plan Builder
+  const [aiBuilderOpen, setAiBuilderOpen] = useState(true);
   const [aiMode, setAiMode] = useState<"single" | "ladder">("single");
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -140,6 +143,32 @@ export default function PlansPage() {
           err instanceof ApiError ? err.message : "Failed to delete plan";
         setDeleteError(message);
       }
+    }
+  };
+
+  const handleCopyLink = async (planId: string) => {
+    setLinkError(null);
+    try {
+      const { checkoutUrl } = await billingApi.getCheckoutLink(planId);
+      await navigator.clipboard.writeText(checkoutUrl);
+      setCopiedPlanId(planId);
+      setTimeout(() => setCopiedPlanId(null), 1500);
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : "Failed to get checkout link";
+      setLinkError(message);
+    }
+  };
+
+  const handleOpenLink = async (planId: string) => {
+    setLinkError(null);
+    try {
+      const { checkoutUrl } = await billingApi.getCheckoutLink(planId);
+      window.open(checkoutUrl, "_blank");
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : "Failed to get checkout link";
+      setLinkError(message);
     }
   };
 
@@ -294,128 +323,6 @@ export default function PlansPage() {
     }
   };
 
-  const handleGenerateWithAi = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!aiPrompt.trim()) return;
-
-    setAiLoading(true);
-    setAiError(null);
-    setAiWarnings([]);
-    try {
-      const { plan, warnings } = await aiApi.generatePlan(aiPrompt);
-      setEditingId(null);
-      setName(plan.name);
-      setAmount(plan.amount);
-      setBillingModel(plan.billingModel);
-      setInterval(plan.interval);
-      setTrialDays(plan.trialDays);
-      setTrialRequireCard(plan.trialRequireCard);
-      setGracePeriodDays(plan.gracePeriodDays);
-      setAiWarnings(warnings);
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "Failed to generate plan";
-      setAiError(message);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  // Assumed subscriber count for the illustrative MRR estimate on each tier card.
-  const MRR_SAMPLE_SUBS = 100;
-
-  // Normalize any recurring interval to a monthly figure so tiers are comparable.
-  const estimateMonthlyRevenue = (tier: Tier) => {
-    if (tier.billingModel !== "recurring") return null;
-    const perMonth =
-      tier.interval === "weekly"
-        ? tier.amount * 4.345
-        : tier.interval === "yearly"
-          ? tier.amount / 12
-          : tier.amount;
-    return Math.round(perMonth * MRR_SAMPLE_SUBS);
-  };
-
-  const handleGenerateLadder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!aiPrompt.trim()) return;
-
-    setAiLoading(true);
-    setAiError(null);
-    setLadderStrategy(null);
-    setLadderTiers([]);
-    setLadderCreated(null);
-    try {
-      const { strategy, plans: tiers } = await aiApi.generateLadder(aiPrompt);
-      setLadderStrategy(strategy);
-      setLadderTiers(tiers);
-    } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : "Failed to generate pricing ladder";
-      setAiError(message);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  // Load a generated tier into the manual form for fine-tuning (tagline is display-only).
-  const loadTierIntoForm = (tier: Tier) => {
-    setEditingId(null);
-    setName(tier.name);
-    setAmount(tier.amount);
-    setBillingModel(tier.billingModel);
-    setInterval(tier.interval);
-    setTrialDays(tier.trialDays);
-    setTrialRequireCard(tier.trialRequireCard);
-    setGracePeriodDays(tier.gracePeriodDays);
-    setAiWarnings([]);
-    if (typeof window !== "undefined")
-      window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleCreateAllTiers = async () => {
-    if (ladderTiers.length === 0) return;
-    setLadderCreating(true);
-    setError(null);
-    setLadderCreated(null);
-    const created: PlanRow[] = [];
-    let failures = 0;
-    // Sequential to keep ordering deterministic and avoid hammering the backend.
-    for (const tier of ladderTiers) {
-      try {
-        const payload = {
-          name: tier.name,
-          amount: tier.amount,
-          billingModel: tier.billingModel,
-          trialDays: tier.trialDays,
-          trialRequireCard: tier.trialRequireCard,
-          gracePeriodDays: tier.gracePeriodDays,
-          ...(tier.billingModel === "recurring"
-            ? { interval: tier.interval }
-            : {}),
-        };
-        created.push(await billingApi.createPlan(payload));
-      } catch {
-        failures += 1;
-      }
-    }
-    if (created.length > 0) setPlans((prev) => [...prev, ...created]);
-    setLadderCreating(false);
-    if (failures === 0) {
-      setLadderCreated(`Created all ${created.length} tiers 🎉`);
-      setLadderTiers([]);
-      setLadderStrategy(null);
-    } else if (created.length > 0) {
-      setLadderCreated(
-        `Created ${created.length} of ${ladderTiers.length} tiers — ${failures} failed.`,
-      );
-    } else {
-      setError("Failed to create the generated tiers. Please try again.");
-    }
-  };
-
   return (
     <div className="space-y-8 select-none">
       <div>
@@ -430,7 +337,7 @@ export default function PlansPage() {
 
       <div className="max-w-4xl space-y-8">
         {/* AI Plan Builder */}
-        <div className="bg-gradient-to-br from-[#2DCA73]/5 to-transparent border border-card-border rounded-xl p-6 shadow-sm space-y-4">
+        <div className="bg-gradient-to-br from-[#2DCA73]/5 to-transparent border border-card-border rounded-xl p-6 shadow-sm space-y-4 relative">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
@@ -477,7 +384,7 @@ export default function PlansPage() {
             </div>
           </div>
 
-          {aiError && (
+          {aiBuilderOpen && aiError && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
               <p className="text-xs font-semibold text-rose-500">{aiError}</p>
             </div>

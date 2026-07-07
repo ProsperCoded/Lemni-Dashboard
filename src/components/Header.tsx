@@ -40,7 +40,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const merchantName = getMerchantName();
+  const [merchantName, setMerchantName] = useState<string | null>(null);
 
   const loadNotifications = async () => {
     try {
@@ -55,6 +55,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNotifications();
+    setMerchantName(getMerchantName());
   }, []);
 
   // Close dropdown when clicking outside
